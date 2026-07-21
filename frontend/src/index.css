@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%; /* White-Gray background */
+    --foreground: 224 71.4% 4.1%; /* Dark Slate text */
+
+    --card: 0 0% 100%; /* Pure white cards */
+    --card-foreground: 224 71.4% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+
+    --primary: 224 76% 12%; /* Deep Navy Blue (Stripe Style) */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 220 14.3% 95.9%; /* Light gray */
+    --secondary-foreground: 220.9 39.3% 11%;
+
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%; /* Neutral Slate-gray */
+
+    --accent: 214 90% 96%; /* Subtle highlight blue */
+    --accent-foreground: 224 76% 12%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 220 13% 91%; /* Clean gray borders (Notion style) */
+    --input: 220 13% 91%;
+    --ring: 224 76% 12%;
+
+    --radius: 0.5rem; /* Sleek small radius (Linear/Stripe style) */
+  }
+
+  .dark {
+    --background: 224 71% 4%; /* Dark space navy background */
+    --foreground: 210 20% 98%;
+
+    --card: 224 71% 6%; /* Slightly lighter navy for cards */
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71% 5%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 217 91% 60%; /* Bright electric blue for visibility */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 224 71% 12%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 224 71% 10%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+
+    --accent: 224 71% 15%; /* Deep accent background */
+    --accent-foreground: 217 91% 60%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 224 71% 12%; /* Subtle dark border */
+    --input: 224 71% 12%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased font-sans transition-colors duration-200;
+  }
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.45);
+}
+
+/* Additional premium class names */
+.notion-shadow {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stripe-card {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}

@@ -1,0 +1,666 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String         @id @default(uuid())
+  email                String         @unique
+  password             String
+  role                 String         @default("STUDENT")
+  isActive             Boolean        @default(true)
+  recoveryToken        String?        @unique
+  recoveryTokenExpires DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  profile              Profile?
+  studentProfile       Student?
+  guardianProfile      Guardian?
+  teacherProfile       Teacher?
+  employeeProfile      Employee?
+  refreshTokens        RefreshToken[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  imports              Import[]
+  uploadedFiles        UploadedFile[]
+  exports              Export[]
+  importModels         ImportModel[]
+  exportModels         ExportModel[]
+
+  @@map("users")
+}
+
+model Profile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName String
+  lastName  String
+  phone     String?
+  birthDate DateTime?
+  avatarUrl String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  resource  String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model Student {
+  id           String            @id @default(uuid())
+  userId       String            @unique
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cpf          String?           @unique
+  rg           String?
+  gender       String?           // Sexo: Masculino, Feminino, Outro
+  address      String?
+  city         String?
+  state        String?
+  cep          String?
+  whatsapp     String?
+  guardianName String?           // Nome do Responsável (Legado)
+  fatherName   String?           // Nome do Pai
+  motherName   String?           // Nome da Mãe
+  status       String            @default("LISTA_DE_ESPERA") // LISTA_DE_ESPERA, MATRICULADO, REMATRICULADO, TRANSFERIDO, CANCELADO
+  notes        String?           // Observações
+  classId      String?
+  class        Class?            @relation(fields: [classId], references: [id], onDelete: SetNull)
+  documents      Document[]
+  history        StudentHistory[]
+  guardians      StudentGuardian[]
+  enrollments    Enrollment[]
+  attendances    Attendance[]
+  activityGrades ActivityGrade[]
+  reportCards    ReportCard[]
+  tuitions       Tuition[]
+
+  @@map("students")
+  @@index([classId])
+}
+
+
+model Document {
+  id        String   @id @default(uuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  name      String   // Nome do documento (ex: RG, CPF, etc.)
+  fileUrl   String   // URL local
+  fileType  String?
+  createdAt DateTime @default(now())
+
+  @@map("documents")
+  @@index([studentId])
+}
+
+model StudentHistory {
+  id        String   @id @default(uuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  action    String   // ex: MATRICULA, ALTERACAO_DADOS, DOCUMENTO_ENVIADO
+  details   String
+  createdAt DateTime @default(now())
+
+  @@map("student_histories")
+  @@index([studentId])
+}
+
+
+model Guardian {
+  id           String            @id @default(uuid())
+  name         String
+  email        String?           @unique
+  phone        String?
+  whatsapp     String?
+  address      String?
+  relationship String?           // Parentesco (Pai, Mãe, Tio, Avô, Outro, etc.)
+  isFinancial  Boolean           @default(false)
+  userId       String?           @unique
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  students     StudentGuardian[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@map("guardians")
+}
+
+model StudentGuardian {
+  studentId  String
+  guardianId String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian   Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, guardianId])
+  @@map("student_guardians")
+}
+
+model Enrollment {
+  id                String   @id @default(uuid())
+  studentId         String
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status            String   // MATRICULADO, REMATRICULADO, TRANSFERIDO, CANCELADO, LISTA_DE_ESPERA
+  schoolYear        String
+  destinationSchool String?
+  reason            String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("enrollments")
+  @@index([studentId])
+}
+
+
+model Teacher {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects     String?        // ex: "Matemática, Física"
+  workload     Int            @default(20)
+  schedule     String?        // ex: Grade horária JSON/Texto
+  classes      Class[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("teachers")
+}
+
+model Employee {
+  id           String         @id @default(uuid())
+  userId       String         @unique
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department   String?        // ex: Secretaria, Financeiro, Direção
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("employees")
+}
+
+model Room {
+  id           String         @id @default(uuid())
+  name         String         @unique // ex: Sala 101
+  capacity     Int            @default(30)
+  classes      Class[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("rooms")
+}
+
+model Class {
+  id           String         @id @default(uuid())
+  name         String
+  gradeYear    String
+  schoolYear   String
+  roomId       String?
+  room         Room?          @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  teacherId    String?
+  teacher      Teacher?       @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  students     Student[]
+  attendances   Attendance[]
+  contents      ClassContent[]
+  activities    Activity[]
+  announcements Announcement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("classes")
+  @@index([roomId])
+  @@index([teacherId])
+}
+
+
+model Attendance {
+  id        String   @id @default(uuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      String   // ex: "2026-07-16"
+  status    String   // PRESENTE, FALTA
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("attendances")
+  @@index([classId])
+  @@index([studentId])
+}
+
+model ClassContent {
+  id          String   @id @default(uuid())
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  date        String   // ex: "2026-07-16"
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("class_contents")
+  @@index([classId])
+}
+
+model Activity {
+  id        String          @id @default(uuid())
+  classId   String
+  class     Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  title     String
+  maxGrade  Float           @default(10.0)
+  date      String          // ex: "2026-07-16"
+  grades    ActivityGrade[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("activities")
+  @@index([classId])
+}
+
+
+model ActivityGrade {
+  id         String   @id @default(uuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  value      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("activity_grades")
+  @@index([activityId])
+  @@index([studentId])
+}
+
+model ReportCard {
+  id            String   @id @default(uuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       String
+  bimester1     Float?
+  bimester2     Float?
+  bimester3     Float?
+  bimester4     Float?
+  remedialGrade Float?
+  finalAverage  Float?
+  status        String   @default("CURSANDO") // CURSANDO, APROVADO, REPROVADO, EM_RECUPERACAO
+  absences      Int      @default(0)
+  schoolYear    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("report_cards")
+  @@index([studentId])
+}
+
+
+model Tuition {
+  id                 String        @id @default(uuid())
+  studentId          String
+  student            Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  description        String
+  dueDate            String        // ex: "2026-01-10"
+  value              Float
+  discount           Float         @default(0.0)
+  scholarshipPercent Float         @default(0.0)
+  fine               Float         @default(0.0)
+  interest           Float         @default(0.0)
+  finalValue         Float
+  status             String        @default("PENDENTE") // PENDENTE, PAGO, ATRASADO
+  paymentMethod      String?       // PIX, BOLETO, CARTAO
+  paymentDate        String?       // ex: "2026-01-09"
+  transactions       Transaction[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@map("tuitions")
+  @@index([studentId])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  type          String   // RECEITA, DESPESA
+  category      String   // ex: Mensalidade, Salário, Material, Luz, Água, Aluguel
+  description   String
+  value         Float
+  date          String   // ex: "2026-01-09"
+  paymentMethod String?  // PIX, BOLETO, CARTAO, DINHEIRO
+  tuitionId     String?
+  tuition       Tuition? @relation(fields: [tuitionId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("transactions")
+  @@index([tuitionId])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  target    String   // ALL, STUDENTS, TEACHERS, GUARDIANS, CLASS
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  senderId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("announcements")
+  @@index([classId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+  @@index([userId])
+}
+
+
+model MessageLog {
+  id            String   @id @default(uuid())
+  senderId      String
+  recipientRole String   // PAIS, ALUNOS, PROFESSORES, TURMA, TODOS
+  recipientName String   // ex: "Turma 1º Ano A", "João da Silva"
+  channel       String   // NOTIFICATION, EMAIL, WHATSAPP
+  subject       String?
+  body          String
+  status        String   @default("ENVIADO") // ENVIADO, FALHA
+  createdAt     DateTime @default(now())
+
+  @@map("message_logs")
+}
+
+// ─── Library Module ────────────────────────────────────────────────────────────
+
+model BookCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  books       Book[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("book_categories")
+}
+
+model Book {
+  id           String        @id @default(uuid())
+  title        String
+  author       String
+  isbn         String?       @unique
+  publisher    String?
+  year         Int?
+  categoryId   String?
+  category     BookCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  totalQty     Int           @default(1)
+  availableQty Int           @default(1)
+  description  String?
+  coverUrl     String?
+  loans        BookLoan[]
+  reservations BookReservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("books")
+  @@index([categoryId])
+}
+
+model BookLoan {
+  id           String   @id @default(uuid())
+  bookId       String
+  book         Book     @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  userId       String
+  borrowerName String
+  loanDate     String   // YYYY-MM-DD
+  dueDate      String   // YYYY-MM-DD
+  returnDate   String?  // YYYY-MM-DD — null while active
+  status       String   @default("ATIVO") // ATIVO, DEVOLVIDO, ATRASADO
+  fine         Float    @default(0.0)     // R$ 1,00/day overdue
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("book_loans")
+  @@index([bookId])
+  @@index([userId])
+}
+
+model BookReservation {
+  id          String   @id @default(uuid())
+  bookId      String
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId      String
+  requesterName String
+  reservedAt  String   // YYYY-MM-DD
+  status      String   @default("AGUARDANDO") // AGUARDANDO, DISPONIVEL, CANCELADA
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("book_reservations")
+  @@index([bookId])
+  @@index([userId])
+}
+
+// ─── Documents / Secretaria Module ─────────────────────────────────────────────
+
+model SchoolDocument {
+  id          String   @id @default(uuid())
+  type        String   // DECLARACAO, HISTORICO, CONTRATO, ATESTADO, OUTRO
+  title       String
+  content     String?  // text body / template
+  filePath    String?  // uploaded file path
+  fileName    String?
+  studentId   String?
+  studentName String?
+  issuedBy    String?  // staff name
+  status      String   @default("RASCUNHO") // RASCUNHO, EMITIDO, ASSINADO
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("school_documents")
+  @@index([studentId])
+}
+
+model ImportModel {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  targetEntity String   // e.g. "STUDENT", "TEACHER", "GUARDIAN", "CLASS", "ROOM"
+  mapping      String   // JSON string of column mapping
+  originSystem String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isShared     Boolean  @default(false)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  imports      Import[]
+
+  @@map("import_models")
+  @@index([userId])
+}
+
+model UploadedFile {
+  id        String   @id @default(uuid())
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String?
+  hash      String?
+  status    String   @default("UPLOADED")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  imports   Import[]
+
+  @@map("uploaded_files")
+  @@index([userId])
+}
+
+model Import {
+  id            String          @id @default(uuid())
+  modelId       String?
+  model         ImportModel?    @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  fileId        String?
+  file          UploadedFile?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  status        String          @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  totalRows     Int             @default(0)
+  processedRows Int             @default(0)
+  successRows   Int             @default(0)
+  errorRows     Int             @default(0)
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  logs          ImportLog[]
+  history       ImportHistory[]
+
+  @@map("imports")
+  @@index([modelId])
+  @@index([fileId])
+  @@index([userId])
+}
+
+model ImportLog {
+  id        String   @id @default(uuid())
+  importId  String
+  import    Import   @relation(fields: [importId], references: [id], onDelete: Cascade)
+  rowNumber Int?
+  status    String   // SUCCESS, ERROR, WARNING
+  message   String
+  details   String?  // JSON/text detail string
+  createdAt DateTime @default(now())
+
+  @@map("import_logs")
+  @@index([importId])
+}
+
+model ImportHistory {
+  id        String   @id @default(uuid())
+  importId  String
+  import    Import   @relation(fields: [importId], references: [id], onDelete: Cascade)
+  status    String   // PENDING, PROCESSING, COMPLETED, FAILED
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("import_history")
+  @@index([importId])
+}
+
+model Export {
+  id            String          @id @default(uuid())
+  format        String          // XML, JSON, CSV, XLSX, ODS, ZIP
+  modules       String          // Comma-separated or JSON list of modules (e.g. "STUDENT,TEACHER")
+  filterType    String          // COMPLETO, PARCIAL, PERIODO, TURMA, ALUNO, PERSONALIZADO
+  filterParams  String?         // JSON string containing specific studentId, classId, dates, etc.
+  status        String          @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  totalRows     Int             @default(0)
+  processedRows Int             @default(0)
+  sizeBytes     Int             @default(0)
+  filePath      String?
+  fileName      String?
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  history       ExportHistory[]
+
+  @@map("exports")
+  @@index([userId])
+}
+
+model ExportHistory {
+  id        String   @id @default(uuid())
+  exportId  String
+  export    Export   @relation(fields: [exportId], references: [id], onDelete: Cascade)
+  status    String   // PENDING, PROCESSING, COMPLETED, FAILED
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@map("export_history")
+  @@index([exportId])
+}
+
+model ExportModel {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  format       String   // XML, JSON, CSV, XLSX, ODS, ZIP
+  modules      String   // comma-separated modules
+  filterType   String   // COMPLETO, PARCIAL, etc.
+  filterParams String?  // JSON string
+  isShared     Boolean  @default(false)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("export_models")
+  @@index([userId])
+}
+
+model ScheduledJob {
+  id           String         @id @default(uuid())
+  name         String
+  type         String         // IMPORT_DIRECTORY, EXPORT_AUTOMATIC
+  frequency    String         // DAILY, WEEKLY_FRIDAY, CRON
+  timeOfDay    String?        // e.g. "22:00"
+  config       String         // JSON string config of modules/format/mappings or path
+  isActive     Boolean        @default(true)
+  lastRun      DateTime?
+  nextRun      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  executions   JobExecution[]
+
+  @@map("scheduled_jobs")
+}
+
+model JobExecution {
+  id           String       @id @default(uuid())
+  jobId        String
+  job          ScheduledJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status       String       // SUCCESS, FAILED
+  logs         String?      // text execution details
+  runTimeMs    Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  @@map("job_executions")
+  @@index([jobId])
+}
+
+
+

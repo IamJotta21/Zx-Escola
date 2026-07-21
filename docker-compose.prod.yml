@@ -1,0 +1,27 @@
+version: '3.9'
+
+# =============================================================================
+# Zx-Escola — Production Overrides
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# =============================================================================
+
+services:
+  backend:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=production
+    # Remove source volume mounts in production
+    volumes:
+      - backend_uploads:/app/src/uploads
+      - backend_db:/app/src/prisma
+
+  frontend:
+    build:
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://api.minhaescola.com/api}
+    # Remove source volume mount; serve via nginx
+    volumes: []
+    ports:
+      - "80:80"
