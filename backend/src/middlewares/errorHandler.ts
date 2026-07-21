@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -21,9 +22,8 @@ export const errorHandler = (err: AppError, req: Request, res: Response, _next: 
     });
   }
 
-  // Log critical errors in development or production
   if (statusCode === 500) {
-    console.error(`[ERROR] ${req.method} ${req.url} - `, err);
+    logger.error(`${req.method} ${req.url} - ${message}`, err);
   }
 
   return res.status(statusCode).json({
