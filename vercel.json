@@ -20,11 +20,11 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api(?:/(.*))?",
       "dest": "backend/src/app.ts"
     },
     {
-      "src": "/uploads/(.*)",
+      "src": "/uploads(?:/(.*))?",
       "dest": "backend/src/app.ts"
     },
     {
