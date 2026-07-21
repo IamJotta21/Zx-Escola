@@ -1,8 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 
+let cachedReportsData: any = null;
+let cacheExpiryTime = 0;
+
 export const getReportsData = async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    const now = Date.now();
+    if (cachedReportsData && now < cacheExpiryTime) {
+      return res.status(200).json({
+        status: 'success',
+        data: cachedReportsData,
+      });
+    }
+
     // 1. Fetch all raw data required for reports in parallel to optimize DB load
     const [students, classes, teachers, tuitions, transactions, reportCards, attendances] =
       await Promise.all([
@@ -169,40 +180,45 @@ export const getReportsData = async (_req: Request, res: Response, next: NextFun
       };
     });
 
+    const reportData = {
+      financial: {
+        totalRevenues,
+        totalExpenses,
+        balance: totalRevenues - totalExpenses,
+        revenuesByCategory,
+        expensesByCategory,
+        paymentMethods,
+        monthlyCashflow: cashflowArray,
+      },
+      tuitions: {
+        paid: { value: tuitionPaidSum, qty: tuitionPaidQty },
+        pending: { value: tuitionPendingSum, qty: tuitionPendingQty },
+        overdue: { value: tuitionOverdueSum, qty: tuitionOverdueQty },
+      },
+      academic: {
+        gradesBySubject: Object.values(gradesBySubject),
+        statusReport: {
+          aprovado: totalApprovals,
+          reprovado: totalFailures,
+          recuperacao: totalRemedial,
+          cursando: totalCursando,
+        },
+      },
+      classes: classStats,
+      students: {
+        total: students.length,
+        byStatus: studentsByStatus,
+        byGender: studentsByGender,
+      },
+      teachers: teacherStats,
+    };
+
+    cachedReportsData = reportData;
+    cacheExpiryTime = Date.now() + 5 * 60 * 1000; // 5 minutes TTL
+
     return res.json({
       status: 'success',
-      data: {
-        financial: {
-          totalRevenues,
-          totalExpenses,
-          balance: totalRevenues - totalExpenses,
-          revenuesByCategory,
-          expensesByCategory,
-          paymentMethods,
-          monthlyCashflow: cashflowArray,
-        },
-        tuitions: {
-          paid: { value: tuitionPaidSum, qty: tuitionPaidQty },
-          pending: { value: tuitionPendingSum, qty: tuitionPendingQty },
-          overdue: { value: tuitionOverdueSum, qty: tuitionOverdueQty },
-        },
-        academic: {
-          gradesBySubject: Object.values(gradesBySubject),
-          statusReport: {
-            aprovado: totalApprovals,
-            reprovado: totalFailures,
-            recuperacao: totalRemedial,
-            cursando: totalCursando,
-          },
-        },
-        classes: classStats,
-        students: {
-          total: students.length,
-          byStatus: studentsByStatus,
-          byGender: studentsByGender,
-        },
-        teachers: teacherStats,
-      },
+      data: reportData,
     });
   } catch (err) {
     return next(err);

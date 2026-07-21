@@ -160,6 +160,7 @@ model StudentGuardian {
 
   @@id([studentId, guardianId])
   @@map("student_guardians")
+  @@index([guardianId])
 }
 
 model Enrollment {
