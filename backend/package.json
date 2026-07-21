@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --exit-child src/server.ts",
     "build": "tsc && npm run prisma:generate",
+    "postinstall": "prisma generate --schema=src/prisma/schema.prisma",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate --schema=src/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
