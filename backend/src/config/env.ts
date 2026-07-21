@@ -7,8 +7,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-  // Database — SQLite file path (default) or PostgreSQL URL for production
-  DATABASE_URL: z.string().default('file:./dev.db'),
+  // Database — PostgreSQL/Supabase connection string
+  DATABASE_URL: z
+    .string()
+    .default('postgresql://postgres:postgres@localhost:5432/zx_escola?schema=public'),
 
   // JWT secrets — require at least 32 chars in production
   JWT_SECRET: z.string().min(8),

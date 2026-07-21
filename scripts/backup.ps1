@@ -18,12 +18,12 @@ Write-Host "💾 Zx-Escola — Backup [$timestamp]" -ForegroundColor Cyan
 # Create backup folder
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
-# Backup SQLite database
+# Backup SQLite database (or log info for PostgreSQL)
 if (Test-Path $dbSource) {
     Copy-Item $dbSource "$backupDir\dev_$timestamp.db"
-    Write-Host "  ✅ Banco de dados: $backupDir\dev_$timestamp.db" -ForegroundColor Green
+    Write-Host "  ✅ Banco de dados SQLite: $backupDir\dev_$timestamp.db" -ForegroundColor Green
 } else {
-    Write-Host "  ⚠️  Banco de dados não encontrado em: $dbSource" -ForegroundColor Yellow
+    Write-Host "  ℹ️  Banco SQLite não encontrado. Para bancos PostgreSQL (como o Supabase), o backup é automatizado e gerenciado na nuvem." -ForegroundColor Gray
 }
 
 # Backup uploads directory

@@ -147,7 +147,7 @@ export class ImportQueueManager {
           data: {
             importId,
             status: 'FAILED',
-            details: `Falha crítica: ${err?.message || 'Erro desconhecido'}. Rollback SQLite executado.`,
+            details: `Falha crítica: ${err?.message || 'Erro desconhecido'}. Rollback do banco executado.`,
           },
         });
       }

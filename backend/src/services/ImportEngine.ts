@@ -35,6 +35,11 @@ export class ImportEngine {
 
   // ─── Public: Restore database from a specific backup ──────────────────────
   public restoreFromBackup(backupName: string): void {
+    if (!fs.existsSync(this.dbPath)) {
+      throw new Error(
+        'Restauração de backup físico não é suportada em ambientes PostgreSQL/Supabase.'
+      );
+    }
     const backupFile = path.join(this.backupsDir, backupName);
     if (!fs.existsSync(backupFile)) {
       throw new Error(`Arquivo de backup não encontrado: ${backupName}`);
@@ -45,7 +50,7 @@ export class ImportEngine {
   // ─── Private: Create safety backup ────────────────────────────────────────
   private backup(): string {
     if (!fs.existsSync(this.dbPath)) {
-      throw new Error(`Banco de dados não encontrado: ${this.dbPath}`);
+      return ''; // Graceful bypass for PostgreSQL
     }
     if (!fs.existsSync(this.backupsDir)) {
       fs.mkdirSync(this.backupsDir, { recursive: true });
@@ -57,7 +62,7 @@ export class ImportEngine {
 
   // ─── Private: Restore from a backup file path ─────────────────────────────
   private restore(backupFile: string) {
-    if (fs.existsSync(backupFile)) {
+    if (backupFile && fs.existsSync(backupFile) && fs.existsSync(this.dbPath)) {
       fs.copyFileSync(backupFile, this.dbPath);
     }
   }
@@ -94,7 +99,9 @@ export class ImportEngine {
     // Safety backup before any write
     const backupPath = this.backup();
 
-    await this.writeLog(importId, null, 'SUCCESS', 'Backup do banco criado', backupPath);
+    if (backupPath) {
+      await this.writeLog(importId, null, 'SUCCESS', 'Backup do banco criado', backupPath);
+    }
 
     let successCount = 0;
     let errorCount = 0;
@@ -218,14 +225,24 @@ export class ImportEngine {
       }
     } catch (error: any) {
       // Physical file rollback on critical failure
-      this.restore(backupPath);
-      await this.writeLog(
-        importId,
-        null,
-        'ERROR',
-        `Falha crítica — rollback físico do SQLite executado`,
-        error?.message
-      );
+      if (backupPath) {
+        this.restore(backupPath);
+        await this.writeLog(
+          importId,
+          null,
+          'ERROR',
+          `Falha crítica — rollback físico do SQLite executado`,
+          error?.message
+        );
+      } else {
+        await this.writeLog(
+          importId,
+          null,
+          'ERROR',
+          `Falha crítica no processamento da importação`,
+          error?.message
+        );
+      }
       throw error;
     }
   }
