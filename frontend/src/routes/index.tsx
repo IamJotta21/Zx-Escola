@@ -1747,7 +1747,7 @@ const ESTADO_OPTIONS = [
   ].map((s) => ({ value: s, label: s })),
 ];
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
 
 const StudentsPage: React.FC = () => {
   const { addToast } = useToast();

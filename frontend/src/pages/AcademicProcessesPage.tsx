@@ -118,7 +118,7 @@ export const AcademicProcessesPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [executing, setExecuting] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
 
   // ── Fetch Students based on Active Tab ──────────────────────────────────────
   const fetchStudents = useCallback(async () => {

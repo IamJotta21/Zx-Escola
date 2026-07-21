@@ -115,7 +115,7 @@ export const GuardiansPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   const fetchGuardians = useCallback(

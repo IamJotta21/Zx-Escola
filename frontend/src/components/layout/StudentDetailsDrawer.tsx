@@ -91,7 +91,7 @@ interface StudentDetailsDrawerProps {
 
 // ─── Helper Fns ───────────────────────────────────────────────────────────────
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   LISTA_DE_ESPERA: {
