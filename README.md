@@ -307,4 +307,4 @@ npm run seed
 
 ## 📝 Licença
 
-Propriedade de [Zx-System]. Todos os direitos reservados.
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
