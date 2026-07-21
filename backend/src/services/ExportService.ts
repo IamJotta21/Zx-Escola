@@ -5,8 +5,12 @@ import * as xlsx from 'xlsx';
 import { Builder } from 'xml2js';
 import AdmZip from 'adm-zip';
 
+import os from 'os';
+
 export class ExportService {
-  private exportsDir = path.resolve(process.cwd(), 'src/uploads/exports');
+  private exportsDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'uploads', 'exports')
+    : path.resolve(process.cwd(), 'src/uploads/exports');
 
   constructor() {
     if (!fs.existsSync(this.exportsDir)) {

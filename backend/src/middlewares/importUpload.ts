@@ -3,8 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import { Request } from 'express';
 
+import os from 'os';
+
 // Ensure import uploads directory exists
-const importUploadDir = path.join(__dirname, '..', '..', 'uploads', 'imports');
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
+const importUploadDir = isVercel
+  ? path.join(os.tmpdir(), 'uploads', 'imports')
+  : path.join(__dirname, '..', '..', 'uploads', 'imports');
 if (!fs.existsSync(importUploadDir)) {
   fs.mkdirSync(importUploadDir, { recursive: true });
 }

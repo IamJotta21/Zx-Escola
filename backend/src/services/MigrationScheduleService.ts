@@ -4,11 +4,17 @@ import * as path from 'path';
 import { ExportService } from './ExportService';
 import { ImportEngine } from './ImportEngine';
 
+import os from 'os';
+
 export class MigrationScheduleService {
   private static instance: MigrationScheduleService;
   private intervalId: NodeJS.Timeout | null = null;
-  private monitoredDir = path.resolve(process.cwd(), 'src/uploads/monitored');
-  private processedDir = path.resolve(process.cwd(), 'src/uploads/monitored/processed');
+  private monitoredDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'uploads', 'monitored')
+    : path.resolve(process.cwd(), 'src/uploads/monitored');
+  private processedDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'uploads', 'monitored', 'processed')
+    : path.resolve(process.cwd(), 'src/uploads/monitored/processed');
   private exportService = new ExportService();
   private importEngine = new ImportEngine();
 
