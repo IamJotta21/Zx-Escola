@@ -22,23 +22,23 @@
   ],
   "routes": [
     {
-      "src": "/api(?:/(.*))?",
+      "src": "/api/(.*)",
       "dest": "backend/src/app.ts"
     },
     {
-      "src": "/uploads(?:/(.*))?",
+      "src": "/api",
+      "dest": "backend/src/app.ts"
+    },
+    {
+      "src": "/uploads/(.*)",
       "dest": "backend/src/app.ts"
     },
     {
       "handle": "filesystem"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/frontend/assets/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/frontend/index.html"
+      "dest": "/index.html"
     }
   ]
 }
