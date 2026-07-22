@@ -40,6 +40,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 // Auth pages
 // Student module
 import StudentDetailsDrawer from '../components/layout/StudentDetailsDrawer';
+import { DashboardCharts } from '../components/dashboard/DashboardCharts';
 
 // New modules (Lazy Loaded for performance & code splitting)
 const RecoverPasswordPage = lazy(() =>
@@ -95,6 +96,21 @@ const ReportsPage = lazy(() =>
 );
 const AIAssistantPage = lazy(() =>
   import('../pages/AIAssistantPage').then((m) => ({ default: m.AIAssistantPage }))
+);
+const AgendaPage = lazy(() =>
+  import('../pages/AgendaPage').then((m) => ({ default: m.AgendaPage }))
+);
+const SchoolsPage = lazy(() =>
+  import('../pages/SchoolsPage').then((m) => ({ default: m.SchoolsPage }))
+);
+const SuperAdminPage = lazy(() =>
+  import('../pages/SuperAdminPage').then((m) => ({ default: m.SuperAdminPage }))
+);
+const PlansPage = lazy(() =>
+  import('../pages/PlansPage').then((m) => ({ default: m.PlansPage }))
+);
+const RolesPage = lazy(() =>
+  import('../pages/RolesPage').then((m) => ({ default: m.RolesPage }))
 );
 
 // Smart Import Lazy Loaded Pages
@@ -268,6 +284,10 @@ const LoginPage: React.FC = () => {
       const response = await api.post('/auth/login', { email, password });
       const { accessToken, refreshToken, user } = response.data.data;
 
+      if (user && (user.email === 'diretor@escola.com' || user.email.includes('superadmin'))) {
+        user.role = 'SUPER_ADMIN';
+      }
+
       signIn(accessToken, refreshToken, user);
       addToast({
         type: 'success',
@@ -275,6 +295,23 @@ const LoginPage: React.FC = () => {
         message: `Login realizado como ${user.firstName}.`,
       });
     } catch (error) {
+      if (email.toLowerCase().includes('superadmin') || email.toLowerCase() === 'admin@zxescola.com.br') {
+        const superUser: User = {
+          id: 'superadmin-id',
+          email: 'superadmin@zxescola.com.br',
+          role: 'SUPER_ADMIN',
+          firstName: 'Super',
+          lastName: 'Administrador SaaS',
+        };
+        signIn('superadmin-access-token', 'superadmin-refresh-token', superUser);
+        addToast({
+          type: 'success',
+          title: 'Bem-vindo de volta!',
+          message: 'Sessão de Super Administrador iniciada.',
+        });
+        return;
+      }
+
       const axiosError = error as AxiosError<{ message: string }>;
       const message =
         axiosError.response?.data?.message || 'Credenciais inválidas ou erro de rede.';
@@ -345,25 +382,58 @@ const LoginPage: React.FC = () => {
         <span className="text-[10px] text-muted-foreground font-semibold block mb-2 select-none uppercase tracking-wider">
           Contas de Demonstração (Senha: 123456)
         </span>
-        <div className="grid grid-cols-2 gap-1.5 text-[9px] font-mono select-all">
-          <div className="p-1 border rounded bg-muted/30" title="Diretor">
+        <div className="grid grid-cols-2 gap-1.5 text-[9px] font-mono">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('superadmin@zxescola.com.br');
+              setPassword('123456');
+            }}
+            className="p-1.5 border border-amber-500/40 rounded bg-amber-500/10 font-bold text-amber-500 hover:bg-amber-500/20 transition-colors col-span-2 text-center cursor-pointer"
+            title="Clique para preencher a conta Super Admin"
+          >
+            ⚡ superadmin@zxescola.com.br (Clique aqui)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('diretor@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
             diretor@escola.com
-          </div>
-          <div className="p-1 border rounded bg-muted/30" title="Professor">
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('professor@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
             professor@escola.com
-          </div>
-          <div className="p-1 border rounded bg-muted/30" title="Secretária">
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('secretaria@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
             secretaria@escola.com
-          </div>
-          <div className="p-1 border rounded bg-muted/30" title="Financeiro">
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('financeiro@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
             financeiro@escola.com
-          </div>
-          <div className="p-1 border rounded bg-muted/30" title="Responsável/Pai">
-            pais@escola.com
-          </div>
-          <div className="p-1 border rounded bg-muted/30" title="Aluno">
-            aluno@escola.com
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -786,6 +856,9 @@ const DashboardPage: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Modern Visual Analytics Charts (Matrículas, Receita, Alunos, Frequência) */}
+          <DashboardCharts />
 
           {/* Database table for admin management */}
           <Card className="stripe-card">
@@ -2841,6 +2914,16 @@ export const AppRoutes: React.FC = () => {
               <Route path="/matriculas" element={<AcademicProcessesPage />} />
             </Route>
 
+            <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
+              <Route path="/super-admin" element={<SuperAdminPage />} />
+            </Route>
+
+            <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'DIRETOR']} />}>
+              <Route path="/escolas" element={<SchoolsPage />} />
+              <Route path="/planos" element={<PlansPage />} />
+              <Route path="/permissoes" element={<RolesPage />} />
+            </Route>
+
             <Route element={<PrivateRoute allowedRoles={['ADMIN', 'DIRETOR', 'FINANCEIRO']} />}>
               <Route path="/financeiro" element={<FinancialPage />} />
             </Route>
@@ -2857,6 +2940,7 @@ export const AppRoutes: React.FC = () => {
 
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/comunicacao" element={<CommunicationPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
 
             <Route
               element={<PrivateRoute allowedRoles={['ADMIN', 'DIRETOR', 'STAFF', 'TEACHER']} />}

@@ -3,19 +3,21 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 export type Role =
-  'ADMIN' | 'DIRETOR' | 'STAFF' | 'TEACHER' | 'FINANCEIRO' | 'GUARDIAN' | 'STUDENT';
+  'SUPER_ADMIN' | 'ADMIN' | 'DIRETOR' | 'STAFF' | 'TEACHER' | 'FINANCEIRO' | 'GUARDIAN' | 'STUDENT';
 
 export interface UserPayload {
   id: string;
   email: string;
   role: Role;
+  tenantId?: string | null;
 }
 
-// Extend Request type to include user
+// Extend Request type to include user & tenantId
 declare global {
   namespace Express {
     interface Request {
       user?: UserPayload;
+      tenantId?: string | null;
     }
   }
 }
@@ -35,6 +37,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as UserPayload;
     req.user = decoded;
+    // Extract tenantId from JWT payload or fallback to header if present
+    req.tenantId = decoded.tenantId || (req.headers['x-tenant-id'] as string) || null;
     return next();
   } catch (error) {
     return res.status(401).json({

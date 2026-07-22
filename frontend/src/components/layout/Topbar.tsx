@@ -71,24 +71,24 @@ export const Topbar: React.FC<TopbarProps> = ({
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch announcements when popover is shown
-  const fetchAnnouncements = async () => {
-    setLoadingNotifs(true);
+  useEffect(() => {
+    if (isNotifOpen) {
+      fetchNotifData();
+    }
+  }, [isNotifOpen]);
+
+  const handleMarkAsRead = async (id: string) => {
     try {
-      const res = await api.get('/communication/announcements');
-      setAnnouncements(res.data.data || []);
-    } catch (err) {
-      console.error('Erro ao carregar comunicados:', err);
-    } finally {
-      setLoadingNotifs(false);
+      await api.put(`/communication/notifications/${id}/read`);
+      setUserNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch {
+      /* silent */
     }
   };
 
-  useEffect(() => {
-    if (isNotifOpen) {
-      fetchAnnouncements();
-    }
-  }, [isNotifOpen]);
+  const unreadCount = userNotifications.filter((n) => !n.isRead).length;
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('pt-BR', {
@@ -149,34 +149,25 @@ export const Topbar: React.FC<TopbarProps> = ({
                   Nenhum aluno encontrado
                 </div>
               ) : (
-                results.map((student) => {
-                  const name = student.name
-                    ? student.name
-                    : student.user?.profile
-                      ? `${student.user.profile.firstName} ${student.user.profile.lastName}`
-                      : student.user?.email || 'Sem nome';
-                  const cpf = student.cpf ? student.cpf : 'Sem CPF';
-                  const className = student.class?.name || 'Sem Turma';
+                results.map((st) => {
+                  const name = st.user?.profile
+                    ? `${st.user.profile.firstName} ${st.user.profile.lastName}`
+                    : st.user?.email || 'Sem nome';
+                  const cpf = st.cpf || 'Sem CPF';
+                  const className = st.class?.name || 'Sem Turma';
 
                   return (
                     <div
-                      key={student.id}
+                      key={st.id}
                       onClick={() => {
                         if (onSelectStudent) {
-                          onSelectStudent(student.id);
+                          onSelectStudent(st.id);
                           setIsOpen(false);
                         }
                       }}
-                      className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-primary/10 hover:border-primary/20 border border-transparent cursor-pointer transition-colors text-left group"
+                      className="p-2 rounded hover:bg-secondary/80 cursor-pointer transition-colors text-left space-y-0.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                          {name}
-                        </span>
-                        <span className="text-[9px] text-primary opacity-0 group-hover:opacity-100 font-medium transition-opacity">
-                          Ver ficha &rarr;
-                        </span>
-                      </div>
+                      <div className="text-xs font-bold text-foreground font-sans truncate">{name}</div>
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-sans">
                         <span>CPF {cpf}</span>
                         <span className="font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded text-[9px] font-sans">
@@ -195,23 +186,46 @@ export const Topbar: React.FC<TopbarProps> = ({
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setIsNotifOpen(!isNotifOpen)}
-            onMouseEnter={() => setIsNotifOpen(true)}
             className="relative rounded-lg p-1.5 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             aria-label="Notificações"
             title="Ver comunicados e avisos"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
+            {unreadCount > 0 ? (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center animate-pulse">
+                {unreadCount}
+              </span>
+            ) : (
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+            )}
           </button>
 
           {isNotifOpen && (
-            <div className="absolute top-10 right-0 bg-card border border-border rounded-xl shadow-2xl w-80 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200 glass-panel">
-              {/* Popover Header */}
-              <div className="flex items-center justify-between border-b border-border/50 p-3 bg-secondary/15">
-                <span className="text-xs font-bold text-foreground">Comunicados & Avisos</span>
-                <Badge variant="outline" className="text-[10px]">
-                  {announcements.length}
-                </Badge>
+            <div className="absolute top-10 right-0 bg-card border border-border rounded-xl shadow-2xl w-84 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200 glass-panel">
+              {/* Popover Header with Tabs */}
+              <div className="flex items-center justify-between border-b border-border/50 p-2 bg-secondary/15">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setNotifTab('notifications')}
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                      notifTab === 'notifications'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Notificações ({unreadCount})
+                  </button>
+                  <button
+                    onClick={() => setNotifTab('announcements')}
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                      notifTab === 'announcements'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Comunicados ({announcements.length})
+                  </button>
+                </div>
               </div>
 
               {/* Popover Content */}
@@ -219,8 +233,43 @@ export const Topbar: React.FC<TopbarProps> = ({
                 {loadingNotifs ? (
                   <div className="flex items-center justify-center py-6 text-xs text-muted-foreground gap-2">
                     <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-primary" />
-                    <span>Carregando avisos...</span>
+                    <span>Carregando notificações...</span>
                   </div>
+                ) : notifTab === 'notifications' ? (
+                  userNotifications.length === 0 ? (
+                    <div className="text-xs text-muted-foreground text-center py-6">
+                      Nenhuma notificação no momento.
+                    </div>
+                  ) : (
+                    userNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`p-2.5 rounded-lg transition-colors flex flex-col gap-1 text-left ${
+                          !notif.isRead ? 'bg-primary/5 font-semibold' : 'hover:bg-secondary/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-foreground leading-snug">
+                            {notif.title}
+                          </span>
+                          {!notif.isRead && (
+                            <button
+                              onClick={() => handleMarkAsRead(notif.id)}
+                              className="text-[9px] text-primary hover:underline font-bold"
+                            >
+                              Marcar lida
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed whitespace-pre-line">
+                          {notif.content}
+                        </p>
+                        <span className="text-[9px] text-muted-foreground/60 font-mono mt-0.5">
+                          {formatDate(notif.createdAt)}
+                        </span>
+                      </div>
+                    ))
+                  )
                 ) : announcements.length === 0 ? (
                   <div className="text-xs text-muted-foreground text-center py-6">
                     Nenhum aviso ou comunicado no momento.
@@ -261,6 +310,22 @@ export const Topbar: React.FC<TopbarProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Super Admin Direct Shortcut Button */}
+        <button
+          onClick={() => { window.location.href = '/super-admin'; }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-500 text-xs font-black tracking-wide transition-all cursor-pointer shadow-sm"
+          title="Clique para ir direto ao Painel do Super Administrador"
+        >
+          <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+          ⚡ Painel Super Admin
+        </button>
+
+        {/* School Tenant Badge */}
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-wide">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          {user?.tenantName || 'Escola Matriz Zx-Escola'}
         </div>
 
         {/* Divider */}

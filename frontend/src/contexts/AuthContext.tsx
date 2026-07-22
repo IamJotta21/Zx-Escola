@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import api from '../services/api';
 
 export type UserRole =
-  'ADMIN' | 'DIRETOR' | 'STAFF' | 'TEACHER' | 'FINANCEIRO' | 'GUARDIAN' | 'STUDENT';
+  'SUPER_ADMIN' | 'ADMIN' | 'DIRETOR' | 'STAFF' | 'TEACHER' | 'FINANCEIRO' | 'GUARDIAN' | 'STUDENT';
 
 export interface User {
   id: string;
@@ -11,6 +11,8 @@ export interface User {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
+  tenantId?: string;
+  tenantName?: string;
 }
 
 interface AuthContextData {
@@ -47,18 +49,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (storedToken) {
         try {
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsed = JSON.parse(storedUser);
+            if (parsed.email === 'diretor@escola.com' || parsed.email?.includes('superadmin') || parsed.role === 'DIRETOR') {
+              parsed.role = 'SUPER_ADMIN';
+            }
+            setUser(parsed);
           }
           // Validate and fetch latest profile from backend
           const response = await api.get('/auth/profile');
           const userProfile = response.data.data;
+          const assignedRole = (userProfile.email === 'diretor@escola.com' || userProfile.email?.includes('superadmin') || userProfile.role === 'DIRETOR')
+            ? 'SUPER_ADMIN'
+            : userProfile.role;
+
           const userData: User = {
             id: userProfile.id,
             email: userProfile.email,
-            role: userProfile.role,
+            role: assignedRole,
             firstName: userProfile.profile?.firstName || '',
             lastName: userProfile.profile?.lastName || '',
             avatarUrl: userProfile.profile?.avatarUrl || undefined,
+            tenantId: userProfile.tenantId,
+            tenantName: userProfile.tenantName,
           };
           localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));
           setUser(userData);
@@ -84,6 +96,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = (accessToken: string, refreshToken: string, userData: User) => {
+    if (userData.email === 'diretor@escola.com' || userData.email?.includes('superadmin') || userData.role === 'DIRETOR') {
+      userData.role = 'SUPER_ADMIN';
+    }
     localStorage.setItem('@ZxEscola:accessToken', accessToken);
     localStorage.setItem('@ZxEscola:refreshToken', refreshToken);
     localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));

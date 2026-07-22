@@ -11,6 +11,10 @@ import {
   getStudentProfile,
   getStudentGrades,
   getStudentActivities,
+  getStudentAttendance,
+  getStudentSchedule,
+  getStudentDocuments,
+  getStudentDashboard,
   getStudentCalendar,
   getStudentMaterials,
   getStudentAnnouncements,
@@ -37,9 +41,13 @@ router.get('/guardian/documents', authorize(guardianRoles), getGuardianDocuments
 // ─── Student Portal ────────────────────────────────────────────────────────────
 const studentRoles: Role[] = ['STUDENT'];
 
+router.get('/student/dashboard', authorize(studentRoles), getStudentDashboard);
 router.get('/student/profile', authorize(studentRoles), getStudentProfile);
 router.get('/student/grades', authorize(studentRoles), getStudentGrades);
 router.get('/student/activities', authorize(studentRoles), getStudentActivities);
+router.get('/student/attendance', authorize(studentRoles), getStudentAttendance);
+router.get('/student/schedule', authorize(studentRoles), getStudentSchedule);
+router.get('/student/documents', authorize(studentRoles), getStudentDocuments);
 router.get('/student/calendar', authorize(studentRoles), getStudentCalendar);
 router.get('/student/materials', authorize(studentRoles), getStudentMaterials);
 router.get('/student/announcements', authorize(studentRoles), getStudentAnnouncements);

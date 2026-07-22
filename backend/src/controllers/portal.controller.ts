@@ -5,6 +5,48 @@ import { prisma } from '../config/database';
 //  GUARDIAN PORTAL
 // ═════════════════════════════════════════════════════════════════════════════
 
+type AuthCheckResult =
+  | { success: true; guardian: any; studentId: string }
+  | { success: false; error: string; status: number };
+
+// Helper function to find guardian and validate child ownership for security isolation
+async function getValidatedGuardianChild(
+  userId: string,
+  userEmail: string | undefined,
+  studentId: string
+): Promise<AuthCheckResult> {
+  let guardian = await prisma.guardian.findUnique({ where: { userId } });
+  if (!guardian && userEmail) {
+    guardian = await prisma.guardian.findFirst({ where: { email: userEmail } });
+    if (guardian) {
+      await prisma.guardian.update({
+        where: { id: guardian.id },
+        data: { userId },
+      }).catch(() => {});
+    }
+  }
+
+  if (!guardian) {
+    return { success: false, error: 'Perfil de responsável não encontrado.', status: 404 };
+  }
+
+  // Verify that the requested studentId is linked to this guardian
+  const link = await prisma.studentGuardian.findUnique({
+    where: {
+      studentId_guardianId: {
+        studentId,
+        guardianId: guardian.id,
+      },
+    },
+  });
+
+  if (!link) {
+    return { success: false, error: 'Acesso não autorizado aos dados deste aluno.', status: 403 };
+  }
+
+  return { success: true, guardian, studentId };
+}
+
 /**
  * List all children linked to the authenticated guardian
  */
@@ -54,6 +96,8 @@ export const getGuardianChildren = async (req: Request, res: Response, next: Nex
       classId: l.student.classId,
       status: l.student.status,
       avatarUrl: l.student.user.profile?.avatarUrl || null,
+      cpf: l.student.cpf,
+      birthDate: l.student.user.profile?.birthDate || null,
     }));
 
     return res.json({ status: 'success', data: children });
@@ -70,6 +114,11 @@ export const getGuardianGrades = async (req: Request, res: Response, next: NextF
     const { studentId } = req.query;
     if (!studentId)
       return res.status(400).json({ status: 'error', message: 'studentId é obrigatório.' });
+
+    const authCheck = await getValidatedGuardianChild(req.user!.id, req.user!.email, studentId as string);
+    if (!authCheck.success) {
+      return res.status(authCheck.status).json({ status: 'error', message: authCheck.error });
+    }
 
     const cards = await prisma.reportCard.findMany({
       where: { studentId: studentId as string },
@@ -91,6 +140,11 @@ export const getGuardianFinance = async (req: Request, res: Response, next: Next
     if (!studentId)
       return res.status(400).json({ status: 'error', message: 'studentId é obrigatório.' });
 
+    const authCheck = await getValidatedGuardianChild(req.user!.id, req.user!.email, studentId as string);
+    if (!authCheck.success) {
+      return res.status(authCheck.status).json({ status: 'error', message: authCheck.error });
+    }
+
     const tuitions = await prisma.tuition.findMany({
       where: { studentId: studentId as string },
       orderBy: { dueDate: 'asc' },
@@ -111,6 +165,11 @@ export const getGuardianAttendance = async (req: Request, res: Response, next: N
     if (!studentId)
       return res.status(400).json({ status: 'error', message: 'studentId é obrigatório.' });
 
+    const authCheck = await getValidatedGuardianChild(req.user!.id, req.user!.email, studentId as string);
+    if (!authCheck.success) {
+      return res.status(authCheck.status).json({ status: 'error', message: authCheck.error });
+    }
+
     const records = await prisma.attendance.findMany({
       where: { studentId: studentId as string },
       orderBy: { date: 'desc' },
@@ -118,8 +177,8 @@ export const getGuardianAttendance = async (req: Request, res: Response, next: N
 
     const total = records.length;
     const absent = records.filter((r) => r.status === 'FALTA').length;
-    const present = total - absent; // Includes PRESENTE, ATRASO, JUSTIFICADA as non-unexcused absence
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    const present = total - absent; // Includes PRESENTE, ATRASO, JUSTIFICADA
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
 
     return res.json({
       status: 'success',
@@ -165,6 +224,11 @@ export const getGuardianSchedule = async (req: Request, res: Response, next: Nex
     if (!studentId)
       return res.status(400).json({ status: 'error', message: 'studentId é obrigatório.' });
 
+    const authCheck = await getValidatedGuardianChild(req.user!.id, req.user!.email, studentId as string);
+    if (!authCheck.success) {
+      return res.status(authCheck.status).json({ status: 'error', message: authCheck.error });
+    }
+
     const student = await prisma.student.findUnique({ where: { id: studentId as string } });
     if (!student?.classId)
       return res.json({ status: 'success', data: { contents: [], activities: [] } });
@@ -196,6 +260,11 @@ export const getGuardianDocuments = async (req: Request, res: Response, next: Ne
     const { studentId } = req.query;
     if (!studentId)
       return res.status(400).json({ status: 'error', message: 'studentId é obrigatório.' });
+
+    const authCheck = await getValidatedGuardianChild(req.user!.id, req.user!.email, studentId as string);
+    if (!authCheck.success) {
+      return res.status(authCheck.status).json({ status: 'error', message: authCheck.error });
+    }
 
     const docs = await prisma.schoolDocument.findMany({
       where: { studentId: studentId as string, status: 'EMITIDO' },
@@ -376,6 +445,172 @@ export const getStudentAnnouncements = async (req: Request, res: Response, next:
     });
 
     return res.json({ status: 'success', data: announcements });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * Student → Attendance records and summary for the authenticated student
+ */
+export const getStudentAttendance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const student = await prisma.student.findUnique({ where: { userId } });
+    if (!student)
+      return res.status(404).json({ status: 'error', message: 'Perfil de aluno não encontrado.' });
+
+    const records = await prisma.attendance.findMany({
+      where: { studentId: student.id },
+      orderBy: { date: 'desc' },
+    });
+
+    const total = records.length;
+    const absent = records.filter((r) => r.status === 'FALTA').length;
+    const present = total - absent;
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
+
+    return res.json({
+      status: 'success',
+      data: { records, summary: { total, present, absent, percentage } },
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * Student → Schedule (contents + activities) for student's class
+ */
+export const getStudentSchedule = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const student = await prisma.student.findUnique({ where: { userId } });
+    if (!student?.classId)
+      return res.json({ status: 'success', data: { contents: [], activities: [] } });
+
+    const [contents, activities] = await Promise.all([
+      prisma.classContent.findMany({
+        where: { classId: student.classId },
+        orderBy: { date: 'desc' },
+        take: 40,
+      }),
+      prisma.activity.findMany({
+        where: { classId: student.classId },
+        orderBy: { date: 'desc' },
+        take: 40,
+      }),
+    ]);
+
+    return res.json({ status: 'success', data: { contents, activities } });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * Student → Issued documents for authenticated student
+ */
+export const getStudentDocuments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const student = await prisma.student.findUnique({ where: { userId } });
+    if (!student)
+      return res.status(404).json({ status: 'error', message: 'Aluno não encontrado.' });
+
+    const docs = await prisma.schoolDocument.findMany({
+      where: { studentId: student.id, status: 'EMITIDO' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json({ status: 'success', data: docs });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * Student → Consolidated Dashboard summary statistics
+ */
+export const getStudentDashboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const student = await prisma.student.findUnique({
+      where: { userId },
+      include: {
+        user: { include: { profile: true } },
+        class: true,
+      },
+    });
+
+    if (!student)
+      return res.status(404).json({ status: 'error', message: 'Aluno não encontrado.' });
+
+    // Fetch report cards, attendance, upcoming activities & announcements
+    const [reportCards, attendances, activities, announcements] = await Promise.all([
+      prisma.reportCard.findMany({ where: { studentId: student.id } }),
+      prisma.attendance.findMany({ where: { studentId: student.id } }),
+      student.classId
+        ? prisma.activity.findMany({
+            where: { classId: student.classId },
+            include: { grades: { where: { studentId: student.id } } },
+            orderBy: { date: 'desc' },
+            take: 5,
+          })
+        : [],
+      prisma.announcement.findMany({
+        where: {
+          OR: [
+            { target: 'ALL' },
+            { target: 'STUDENTS' },
+            ...(student.classId ? [{ target: 'CLASS', classId: student.classId }] : []),
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    // Calculate metrics
+    const totalAttendances = attendances.length;
+    const totalAbsences = attendances.filter((a) => a.status === 'FALTA').length;
+    const attendancePercentage =
+      totalAttendances > 0 ? Math.round(((totalAttendances - totalAbsences) / totalAttendances) * 100) : 100;
+
+    const averages = reportCards.map((rc) => rc.finalAverage).filter((v): v is number => v !== null);
+    const overallAverage =
+      averages.length > 0 ? Math.round((averages.reduce((a, b) => a + b, 0) / averages.length) * 10) / 10 : null;
+
+    return res.json({
+      status: 'success',
+      data: {
+        profile: {
+          id: student.id,
+          name: student.user.profile
+            ? `${student.user.profile.firstName} ${student.user.profile.lastName}`
+            : student.user.email,
+          email: student.user.email,
+          className: student.class?.name || 'Não enturmado',
+          status: student.status,
+          avatarUrl: student.user.profile?.avatarUrl || null,
+        },
+        stats: {
+          totalSubjects: reportCards.length,
+          overallAverage,
+          totalAbsences,
+          attendancePercentage,
+          pendingActivities: activities.filter((a) => a.grades.length === 0).length,
+        },
+        recentActivities: activities.map((a) => ({
+          id: a.id,
+          title: a.title,
+          date: a.date,
+          maxGrade: a.maxGrade,
+          myGrade: a.grades[0]?.value ?? null,
+        })),
+        recentAnnouncements: announcements,
+      },
+    });
   } catch (err) {
     return next(err);
   }

@@ -24,6 +24,11 @@ import {
   Shield,
   ChevronDown,
   FolderSync,
+  Calendar,
+  Building2,
+  ShieldAlert,
+  CreditCard,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -55,10 +60,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     {
+      name: 'Painel Super Admin',
+      path: '/super-admin',
+      icon: ShieldAlert,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+    },
+    {
       name: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
-      roles: ['ADMIN', 'DIRETOR', 'STAFF', 'TEACHER', 'FINANCEIRO', 'GUARDIAN', 'STUDENT'],
+      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR', 'STAFF', 'TEACHER', 'FINANCEIRO', 'GUARDIAN', 'STUDENT'],
+    },
+    {
+      name: 'Escolas',
+      path: '/escolas',
+      icon: Building2,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+    },
+    {
+      name: 'Planos & Assinaturas',
+      path: '/planos',
+      icon: CreditCard,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+    },
+    {
+      name: 'Permissões RBAC',
+      path: '/permissoes',
+      icon: ShieldCheck,
+      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
     },
     {
       name: 'Turmas',
@@ -104,6 +133,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ['ADMIN', 'DIRETOR', 'TEACHER', 'GUARDIAN', 'STUDENT'],
     },
 
+    {
+      name: 'Agenda Escolar',
+      path: '/agenda',
+      icon: Calendar,
+      roles: ['ADMIN', 'DIRETOR', 'STAFF', 'TEACHER', 'GUARDIAN', 'STUDENT'],
+    },
     {
       name: 'Comunicação',
       path: '/comunicacao',
@@ -183,29 +218,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation Items */}
         <nav className="mt-8 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                onClick={closeMobile}
-                className={({ isActive }) => `
-                  flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 gap-3 group select-none
-                  ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                  }
-                  ${isCollapsed ? 'justify-center' : ''}
-                `}
-                title={isCollapsed ? item.name : undefined}
-              >
-                <Icon className={`h-5 w-5 shrink-0 ${isCollapsed ? '' : ''}`} />
-                {!isCollapsed && <span className="font-sans">{item.name}</span>}
-              </NavLink>
-            );
-          })}
+          {menuItems
+            .filter((item) => !user || !item.roles || item.roles.includes(user.role))
+            .map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  onClick={closeMobile}
+                  className={({ isActive }) => `
+                    flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 gap-3 group select-none
+                    ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    }
+                    ${isCollapsed ? 'justify-center' : ''}
+                  `}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className={`h-5 w-5 shrink-0 ${isCollapsed ? '' : ''}`} />
+                  {!isCollapsed && <span className="font-sans">{item.name}</span>}
+                </NavLink>
+              );
+            })}
 
           {/* Administração Collapsible Group */}
           {(!user || ['ADMIN', 'DIRETOR'].includes(user.role)) && (

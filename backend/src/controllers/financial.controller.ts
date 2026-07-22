@@ -182,14 +182,70 @@ export const getStudentTuitions = async (req: Request, res: Response, next: Next
 
 export const listTuitions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, studentId } = req.query;
+    const { status, studentId, search, classId, startDate, endDate } = req.query;
 
     const where: any = {};
+    const todayStr = formatDate(new Date());
+
     if (status) {
-      where.status = status as string;
+      if (status === 'ATRASADO') {
+        where.OR = [
+          { status: 'ATRASADO' },
+          { AND: [{ status: 'PENDENTE' }, { dueDate: { lt: todayStr } }] },
+        ];
+      } else {
+        where.status = status as string;
+      }
     }
+
     if (studentId) {
       where.studentId = studentId as string;
+    }
+
+    if (classId) {
+      where.student = { classId: classId as string };
+    }
+
+    if (startDate || endDate) {
+      where.dueDate = {};
+      if (startDate) where.dueDate.gte = startDate as string;
+      if (endDate) where.dueDate.lte = endDate as string;
+    }
+
+    if (search) {
+      const searchStr = (search as string).trim();
+      const searchFilter = [
+        { description: { contains: searchStr } },
+        {
+          student: {
+            OR: [
+              { cpf: { contains: searchStr } },
+              {
+                user: {
+                  OR: [
+                    { email: { contains: searchStr } },
+                    {
+                      profile: {
+                        OR: [
+                          { firstName: { contains: searchStr } },
+                          { lastName: { contains: searchStr } },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchFilter }];
+        delete where.OR;
+      } else {
+        where.OR = searchFilter;
+      }
     }
 
     const tuitions = await prisma.tuition.findMany({
@@ -198,6 +254,7 @@ export const listTuitions = async (req: Request, res: Response, next: NextFuncti
         student: {
           include: {
             user: { include: { profile: true } },
+            class: true,
           },
         },
       },
@@ -303,8 +360,9 @@ export const listTransactions = async (req: Request, res: Response, next: NextFu
 export const getFinancialSummary = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const todayStr = formatDate(new Date());
+    const currentMonthStr = todayStr.substring(0, 7); // "YYYY-MM"
 
-    // 1. Calculate running totals
+    // 1. Transactions & Month Revenue
     const transactions = await prisma.transaction.findMany();
     const totalRevenues = transactions
       .filter((t) => t.type === 'RECEITA')
@@ -314,26 +372,44 @@ export const getFinancialSummary = async (_req: Request, res: Response, next: Ne
       .reduce((sum, t) => sum + t.value, 0);
     const balance = totalRevenues - totalExpenses;
 
-    // 2. Defaulters (PENDENTE status and past due dates)
-    const overdueTuitions = await prisma.tuition.findMany({
-      where: {
-        status: 'PENDENTE',
-        dueDate: { lt: todayStr },
-      },
+    const monthRevenue = transactions
+      .filter((t) => t.type === 'RECEITA' && t.date && t.date.startsWith(currentMonthStr))
+      .reduce((sum, t) => sum + t.value, 0);
+
+    // 2. All tuitions stats
+    const allTuitions = await prisma.tuition.findMany({
       include: {
         student: {
           include: {
             user: { include: { profile: true } },
+            class: true,
           },
         },
       },
       orderBy: { dueDate: 'asc' },
     });
 
-    const overdueSum = overdueTuitions.reduce((sum, t) => {
-      const net = t.value * (1 - t.scholarshipPercent / 100) - t.discount;
-      return sum + Math.max(0, net);
-    }, 0);
+    const totalTuitionsCount = allTuitions.length;
+
+    // Paid
+    const paidTuitions = allTuitions.filter((t) => t.status === 'PAGO');
+    const paidCount = paidTuitions.length;
+    const paidSum = paidTuitions.reduce((sum, t) => sum + t.finalValue, 0);
+
+    // Pending (on-time)
+    const pendingTuitions = allTuitions.filter((t) => t.status === 'PENDENTE' && t.dueDate >= todayStr);
+    const pendingCount = pendingTuitions.length;
+    const pendingSum = pendingTuitions.reduce((sum, t) => sum + t.finalValue, 0);
+
+    // Overdue (Inadimplência)
+    const overdueTuitions = allTuitions.filter(
+      (t) => t.status === 'ATRASADO' || (t.status === 'PENDENTE' && t.dueDate < todayStr)
+    );
+    const overdueCount = overdueTuitions.length;
+    const overdueSum = overdueTuitions.reduce((sum, t) => sum + t.finalValue, 0);
+
+    // Defaulter Rate (% Inadimplência)
+    const defaultRate = totalTuitionsCount > 0 ? Math.round((overdueCount / totalTuitionsCount) * 1000) / 10 : 0;
 
     return res.status(200).json({
       status: 'success',
@@ -342,10 +418,19 @@ export const getFinancialSummary = async (_req: Request, res: Response, next: Ne
           totalRevenues: parseFloat(totalRevenues.toFixed(2)),
           totalExpenses: parseFloat(totalExpenses.toFixed(2)),
           balance: parseFloat(balance.toFixed(2)),
+          monthRevenue: parseFloat(monthRevenue.toFixed(2)),
+          defaultRate,
+          paidCount,
+          paidSum: parseFloat(paidSum.toFixed(2)),
+          pendingCount,
+          pendingSum: parseFloat(pendingSum.toFixed(2)),
+          overdueCount,
           overdueSum: parseFloat(overdueSum.toFixed(2)),
-          overdueCount: overdueTuitions.length,
+          totalTuitionsCount,
         },
         overdueList: overdueTuitions,
+        paidList: paidTuitions,
+        pendingList: pendingTuitions,
       },
     });
   } catch (error) {

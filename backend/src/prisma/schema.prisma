@@ -9,6 +9,80 @@ generator client {
   binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
+model Tenant {
+  id                String    @id @default(uuid())
+  name              String
+  tradeName         String?
+  cnpj              String?
+  stateRegistration String?
+  cityRegistration  String?
+
+  // Endereço
+  cep               String?
+  street            String?
+  number            String?
+  complement        String?
+  neighborhood      String?
+  city              String?
+  state             String?
+
+  // Contato
+  phone             String?
+  whatsapp          String?
+  email             String?
+  website           String?
+
+  // Responsável Legal
+  legalName         String?
+  legalCpf          String?
+  legalRole         String?
+  legalEmail        String?
+  legalPhone        String?
+
+  // Identidade Visual
+  logoUrl           String?
+  faviconUrl        String?
+  primaryColor      String?   @default("#3b82f6")
+  secondaryColor    String?   @default("#1e293b")
+
+  // Configurações Acadêmicas
+  academicYear      String?   @default("2026")
+  gradingSystem     String?   @default("DECIMAL_0_10")
+  minPassingGrade   Float?    @default(6.0)
+  minAttendance     Float?    @default(75.0)
+  periodType        String?   @default("BIMESTRE")
+
+  // Configurações Financeiras
+  currency          String?   @default("BRL")
+  defaultDueDay     Int?      @default(10)
+  defaultInterest   Float?    @default(1.0)
+  defaultFine       Float?    @default(2.0)
+
+  status            String    @default("ACTIVE") // ACTIVE, SUSPENDED, CANCELLED
+  plan              String    @default("BASIC")  // BASIC, PRO, ENTERPRISE
+  config            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  expiresAt         DateTime?
+
+  users          User[]
+  students       Student[]
+  guardians      Guardian[]
+  teachers       Teacher[]
+  employees      Employee[]
+  classes        Class[]
+  tuitions       Tuition[]
+  transactions   Transaction[]
+  books          Book[]
+  schoolDocs     SchoolDocument[]
+  announcements  Announcement[]
+  calendarEvents CalendarEvent[]
+  auditLogs      AuditLog[]
+  subscriptions  Subscription[]
+
+  @@map("tenants")
+}
+
 model User {
   id                   String         @id @default(uuid())
   email                String         @unique
@@ -17,6 +91,8 @@ model User {
   isActive             Boolean        @default(true)
   recoveryToken        String?        @unique
   recoveryTokenExpires DateTime?
+  tenantId             String?
+  tenant               Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   profile              Profile?
@@ -67,6 +143,8 @@ model AuditLog {
   id        String   @id @default(uuid())
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   action    String
   resource  String
   details   String?
@@ -80,6 +158,8 @@ model Student {
   id           String            @id @default(uuid())
   userId       String            @unique
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId     String?
+  tenant       Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   cpf          String?           @unique
   rg           String?
   gender       String?           // Sexo: Masculino, Feminino, Outro
@@ -146,6 +226,8 @@ model Guardian {
   isFinancial  Boolean           @default(false)
   userId       String?           @unique
   user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenantId     String?
+  tenant       Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   students     StudentGuardian[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
@@ -185,6 +267,8 @@ model Teacher {
   id           String         @id @default(uuid())
   userId       String         @unique
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   subjects     String?        // ex: "Matemática, Física"
   workload     Int            @default(20)
   schedule     String?        // ex: Grade horária JSON/Texto
@@ -199,6 +283,8 @@ model Employee {
   id           String         @id @default(uuid())
   userId       String         @unique
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   department   String?        // ex: Secretaria, Financeiro, Direção
   notes        String?
   createdAt    DateTime       @default(now())
@@ -223,6 +309,8 @@ model Class {
   name         String
   gradeYear    String
   schoolYear   String
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   roomId       String?
   room         Room?          @relation(fields: [roomId], references: [id], onDelete: SetNull)
   teacherId    String?
@@ -232,6 +320,7 @@ model Class {
   contents      ClassContent[]
   activities    Activity[]
   announcements Announcement[]
+  calendarEvents CalendarEvent[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -328,6 +417,8 @@ model Tuition {
   id                 String        @id @default(uuid())
   studentId          String
   student            Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tenantId           String?
+  tenant             Tenant?       @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   description        String
   dueDate            String        // ex: "2026-01-10"
   value              Float
@@ -357,6 +448,8 @@ model Transaction {
   paymentMethod String?  // PIX, BOLETO, CARTAO, DINHEIRO
   tuitionId     String?
   tuition       Tuition? @relation(fields: [tuitionId], references: [id], onDelete: SetNull)
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -372,6 +465,8 @@ model Announcement {
   classId   String?
   class     Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
   senderId  String
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -429,6 +524,8 @@ model Book {
   year         Int?
   categoryId   String?
   category     BookCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tenantId     String?
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   totalQty     Int           @default(1)
   availableQty Int           @default(1)
   description  String?
@@ -491,6 +588,8 @@ model SchoolDocument {
   studentName String?
   issuedBy    String?  // staff name
   status      String   @default("RASCUNHO") // RASCUNHO, EMITIDO, ASSINADO
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -664,6 +763,109 @@ model JobExecution {
   @@map("job_executions")
   @@index([jobId])
 }
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  eventType   String   // INICIO_AULAS, FERIAS, RECESSO, FERIADO, EVENTO, REUNIAO, PROVA, RECUPERACAO
+  startDate   String   // YYYY-MM-DD
+  endDate     String?  // YYYY-MM-DD
+  location    String?
+  target      String   @default("ALL") // ALL, STUDENTS, TEACHERS, GUARDIANS, CLASS
+  classId     String?
+  class       Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("calendar_events")
+  @@index([eventType])
+  @@index([startDate])
+}
+
+model Plan {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  monthlyPrice  Float          @default(0.0)
+  yearlyPrice   Float          @default(0.0)
+  isActive      Boolean        @default(true)
+  trialDays     Int            @default(14)
+  sortOrder     Int            @default(1)
+
+  // Usage Limits (null = unlimited)
+  maxStudents   Int?
+  maxTeachers   Int?
+  maxEmployees  Int?
+  maxGuardians  Int?
+  maxUsers      Int?
+  maxStorageMb  Int?
+
+  // Modules JSON String ({ dashboard: true, financial: true, ... })
+  modules       String?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id            String        @id @default(uuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          Plan          @relation(fields: [planId], references: [id], onDelete: Restrict)
+  price         Float
+  startDate     DateTime      @default(now())
+  dueDate       DateTime
+  autoRenew     Boolean       @default(true)
+  status        String        @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED, EXPIRED
+  paymentMethod String?       // PIX, BOLETO, CARTAO
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("subscriptions")
+  @@index([tenantId])
+  @@index([status])
+}
+
+model SubscriptionHistory {
+  id            String   @id @default(uuid())
+  tenantId      String
+  userId        String?
+  action        String   // TROCA_PLANO, RENOVACAO, CANCELAMENTO, EXPIRACAO, REATIVACAO
+  previousPlan  String?
+  newPlan       String?
+  details       String?
+  createdAt     DateTime @default(now())
+
+  @@map("subscription_histories")
+  @@index([tenantId])
+}
+
+model RoleProfile {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  isSystemDefault Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  tenantId        String?
+  permissions     String   // JSON string containing module action matrix
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("role_profiles")
+  @@index([tenantId])
+}
+
+
+
 
 
 

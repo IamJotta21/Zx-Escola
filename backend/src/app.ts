@@ -22,6 +22,12 @@ import schooldocRoutes from './routes/schooldoc.routes';
 import portalRoutes from './routes/portal.routes';
 import reportRoutes from './routes/report.routes';
 import aiRoutes from './routes/ai.routes';
+import calendarRoutes from './routes/calendar.routes';
+import tenantRoutes from './routes/tenant.routes';
+import superadminRoutes from './routes/superadmin.routes';
+import planRoutes from './routes/plan.routes';
+import roleRoutes from './routes/role.routes';
+import { ensureDefaultTenant } from './middlewares/tenant.middleware';
 import ImportRoutes from './routes/ImportRoutes';
 import ExportRoutes from './routes/ExportRoutes';
 import MigrationRoutes from './routes/MigrationRoutes';
@@ -121,6 +127,16 @@ apiRouter.use('/reports', reportRoutes);
 
 // Register AI assistant router
 apiRouter.use('/ai', aiRoutes);
+
+// Register calendar router
+apiRouter.use('/calendar', calendarRoutes);
+
+// Register tenants router
+apiRouter.use('/tenants', tenantRoutes);
+apiRouter.use('/superadmin', superadminRoutes);
+apiRouter.use('/plans', planRoutes);
+apiRouter.use('/roles', roleRoutes);
+ensureDefaultTenant();
 
 // Register Smart Import router
 apiRouter.use('/imports', ImportRoutes);

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
 import { isValidEmail, isValidCPF, isValidCEP, isValidPhone } from '../utils/validators';
+import { createAuditLog } from '../utils/audit.utils';
 
 // 1. Create Student
 export const createStudent = async (req: Request, res: Response, next: NextFunction) => {
@@ -71,12 +72,14 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
 
     // Transaction to create User, Profile, Student, and History
     const result = await prisma.$transaction(async (tx) => {
+      const tenantId = req.tenantId || 'escola-matriz-default-id';
       const user = await tx.user.create({
         data: {
           email,
           password: defaultPassword,
           role: 'STUDENT',
-          isActive: isActive !== undefined ? isActive : true,
+          isActive: isActive !== undefined ? Boolean(isActive) : true,
+          tenantId,
           profile: {
             create: {
               firstName,
@@ -92,6 +95,7 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
       const student = await tx.student.create({
         data: {
           userId: user.id,
+          tenantId,
           cpf,
           rg,
           gender,
@@ -117,6 +121,14 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
       });
 
       return { user, student };
+    });
+
+    createAuditLog({
+      userId: req.user?.id,
+      action: 'CRIAR_ALUNO',
+      resource: 'Student',
+      details: `Novo aluno cadastrado: ${firstName} ${lastName} (${email})`,
+      ipAddress: req.ip,
     });
 
     return res.status(201).json({
@@ -295,10 +307,14 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build Prisma query condition
+    // Build Prisma query condition with tenant isolation
     const where: any = {
       user: {},
     };
+
+    if (req.tenantId) {
+      where.OR = [{ tenantId: req.tenantId }, { tenantId: null }];
+    }
 
     // Text Search in FirstName, LastName, CPF, RG, E-mail, Registration Number (Case-Insensitive)
     if (search) {
