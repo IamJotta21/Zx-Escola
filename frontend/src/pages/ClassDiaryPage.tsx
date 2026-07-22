@@ -149,6 +149,13 @@ export const ClassDiaryPage: React.FC = () => {
     try {
       const res = await api.get(`/classes/${classId}`);
       const data = res.data.data;
+      if (data && data.students) {
+        data.students.sort((a: any, b: any) => {
+          const nameA = a.user?.profile ? `${a.user.profile.firstName} ${a.user.profile.lastName}` : a.name || a.email || '';
+          const nameB = b.user?.profile ? `${b.user.profile.firstName} ${b.user.profile.lastName}` : b.name || b.email || '';
+          return nameA.localeCompare(nameB, 'pt-BR');
+        });
+      }
       setClassDetail(data);
 
       // Parse subjects

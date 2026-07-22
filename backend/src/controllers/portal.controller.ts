@@ -472,14 +472,16 @@ export const getTeacherClasses = async (req: Request, res: Response, next: NextF
       schoolYear: c.schoolYear,
       room: c.room ? { name: c.room.name, capacity: c.room.capacity } : null,
       studentsCount: c.students.length,
-      students: c.students.map((st) => ({
-        id: st.id,
-        name: st.user.profile
-          ? `${st.user.profile.firstName} ${st.user.profile.lastName}`
-          : st.user.email,
-        email: st.user.email,
-        status: st.status,
-      })),
+      students: c.students
+        .map((st) => ({
+          id: st.id,
+          name: st.user.profile
+            ? `${st.user.profile.firstName} ${st.user.profile.lastName}`
+            : st.user.email,
+          email: st.user.email,
+          status: st.status,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
     }));
 
     return res.json({ status: 'success', data: mapped });

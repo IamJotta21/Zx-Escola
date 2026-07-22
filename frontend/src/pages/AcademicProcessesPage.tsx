@@ -153,6 +153,11 @@ export const AcademicProcessesPage: React.FC = () => {
           ['LISTA_DE_ESPERA', 'MATRICULADO', 'REMATRICULADO'].includes(s.status)
         );
       }
+      filtered = filtered.sort((a, b) => {
+        const nameA = a.user?.profile ? `${a.user.profile.firstName} ${a.user.profile.lastName}`.trim() : a.user?.email || '';
+        const nameB = b.user?.profile ? `${b.user.profile.firstName} ${b.user.profile.lastName}`.trim() : b.user?.email || '';
+        return nameA.localeCompare(nameB, 'pt-BR');
+      });
 
       setStudents(filtered);
     } catch {

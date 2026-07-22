@@ -599,9 +599,9 @@ export const TeacherPortalPage: React.FC = () => {
 
   // Attendance Filtering
   const filteredAttendanceStudents =
-    currentClassObj?.students.filter((st) =>
-      st.name.toLowerCase().includes(attendanceSearch.toLowerCase())
-    ) || [];
+    (currentClassObj?.students || [])
+      .filter((st) => st.name.toLowerCase().includes(attendanceSearch.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   // Calculate dynamic stats for currently loaded attendance
   const totalLoaded = filteredAttendanceStudents.length;
@@ -613,9 +613,9 @@ export const TeacherPortalPage: React.FC = () => {
 
   // Grades Filtering
   const filteredGradesStudents =
-    currentClassObj?.students.filter((st) =>
-      st.name.toLowerCase().includes(gradesSearch.toLowerCase())
-    ) || [];
+    (currentClassObj?.students || [])
+      .filter((st) => st.name.toLowerCase().includes(gradesSearch.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

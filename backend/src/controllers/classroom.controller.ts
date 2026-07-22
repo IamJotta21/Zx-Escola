@@ -194,6 +194,10 @@ export const listClasses = async (req: Request, res: Response, next: NextFunctio
               },
             },
           },
+          orderBy: [
+            { user: { profile: { firstName: 'asc' } } },
+            { user: { profile: { lastName: 'asc' } } },
+          ],
         },
       },
       orderBy: { name: 'asc' },
@@ -230,6 +234,10 @@ export const getClass = async (req: Request, res: Response, next: NextFunction) 
               },
             },
           },
+          orderBy: [
+            { user: { profile: { firstName: 'asc' } } },
+            { user: { profile: { lastName: 'asc' } } },
+          ],
         },
       },
     });

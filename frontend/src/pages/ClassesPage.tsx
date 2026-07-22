@@ -351,14 +351,20 @@ export const ClassesPage: React.FC = () => {
   };
 
   // Filters for student selection
-  const filteredStudents = students.filter((st) => {
-    const name =
-      `${st.user.profile?.firstName || ''} ${st.user.profile?.lastName || ''}`.toLowerCase();
-    const matchesSearch = name.includes(studentSearch.toLowerCase());
-    // Show either students already in this class, OR students who have NO class assigned (not in any other class)
-    const isUnassignedOrInThisClass = !st.classId || st.classId === allocatingClass?.id;
-    return matchesSearch && isUnassignedOrInThisClass;
-  });
+  const filteredStudents = students
+    .filter((st) => {
+      const name =
+        `${st.user.profile?.firstName || ''} ${st.user.profile?.lastName || ''}`.toLowerCase();
+      const matchesSearch = name.includes(studentSearch.toLowerCase());
+      // Show either students already in this class, OR students who have NO class assigned (not in any other class)
+      const isUnassignedOrInThisClass = !st.classId || st.classId === allocatingClass?.id;
+      return matchesSearch && isUnassignedOrInThisClass;
+    })
+    .sort((a, b) => {
+      const nameA = `${a.user.profile?.firstName || ''} ${a.user.profile?.lastName || ''}`.trim() || a.user.email;
+      const nameB = `${b.user.profile?.firstName || ''} ${b.user.profile?.lastName || ''}`.trim() || b.user.email;
+      return nameA.localeCompare(nameB, 'pt-BR');
+    });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

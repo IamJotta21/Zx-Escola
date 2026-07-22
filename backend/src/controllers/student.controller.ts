@@ -357,11 +357,10 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
         },
         skip,
         take: limitNum,
-        orderBy: {
-          user: {
-            createdAt: 'desc',
-          },
-        },
+        orderBy: [
+          { user: { profile: { firstName: 'asc' } } },
+          { user: { profile: { lastName: 'asc' } } },
+        ],
       }),
     ]);
 
