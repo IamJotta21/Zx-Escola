@@ -308,7 +308,6 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
       where.OR = [
         { cpf: { contains: searchStr, mode: 'insensitive' } },
         { rg: { contains: searchStr, mode: 'insensitive' } },
-        { registrationNumber: { contains: searchStr, mode: 'insensitive' } },
         {
           user: {
             OR: [
