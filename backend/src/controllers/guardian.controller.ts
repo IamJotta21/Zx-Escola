@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
 import { isValidEmail, isValidPhone } from '../utils/validators';
 
@@ -14,6 +15,7 @@ export const createGuardian = async (req: Request, res: Response, next: NextFunc
       relationship,
       isFinancial,
       studentIds, // Array of student IDs to link
+      password, // Optional custom password or default '123456'
     } = req.body;
 
     if (!name) {
@@ -39,7 +41,38 @@ export const createGuardian = async (req: Request, res: Response, next: NextFunc
       }
     }
 
+    let createdUserId: string | null = null;
+
     const result = await prisma.$transaction(async (tx) => {
+      // Auto-create User account with GUARDIAN role if email provided
+      if (email) {
+        let existingUser = await tx.user.findUnique({ where: { email } });
+        if (!existingUser) {
+          const nameParts = name.trim().split(/\s+/);
+          const firstName = nameParts[0] || 'Responsável';
+          const lastName = nameParts.slice(1).join(' ') || 'Familiar';
+          const defaultPassword = password || '123456';
+          const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+          existingUser = await tx.user.create({
+            data: {
+              email,
+              password: hashedPassword,
+              role: 'GUARDIAN',
+              isActive: true,
+              profile: {
+                create: {
+                  firstName,
+                  lastName,
+                  phone: phone || null,
+                },
+              },
+            },
+          });
+        }
+        createdUserId = existingUser.id;
+      }
+
       // Create guardian
       const guardian = await tx.guardian.create({
         data: {
@@ -50,6 +83,7 @@ export const createGuardian = async (req: Request, res: Response, next: NextFunc
           address: address || null,
           relationship: relationship || null,
           isFinancial: isFinancial || false,
+          userId: createdUserId,
         },
       });
 

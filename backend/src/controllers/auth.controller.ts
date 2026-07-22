@@ -14,10 +14,47 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(400).json({ status: 'error', message: 'E-mail e senha são obrigatórios' });
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email },
       include: { profile: true },
     });
+
+    // Fallback: If user is not found, check if a Guardian exists with this email
+    if (!user) {
+      const guardian = await prisma.guardian.findUnique({ where: { email } });
+      if (guardian) {
+        // Auto-generate User account for existing Guardian with default password '123456' or provided password
+        const nameParts = guardian.name.trim().split(/\s+/);
+        const firstName = nameParts[0] || 'Responsável';
+        const lastName = nameParts.slice(1).join(' ') || 'Familiar';
+        const hashedPassword = await bcrypt.hash(password || '123456', 10);
+
+        const newUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            role: 'GUARDIAN',
+            isActive: true,
+            profile: {
+              create: {
+                firstName,
+                lastName,
+                phone: guardian.phone || null,
+              },
+            },
+          },
+          include: { profile: true },
+        });
+
+        // Link userId to Guardian
+        await prisma.guardian.update({
+          where: { id: guardian.id },
+          data: { userId: newUser.id },
+        });
+
+        user = newUser;
+      }
+    }
 
     if (!user || !user.isActive) {
       return res.status(401).json({ status: 'error', message: 'Credenciais inválidas' });

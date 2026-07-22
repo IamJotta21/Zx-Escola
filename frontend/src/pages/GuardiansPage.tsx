@@ -530,14 +530,19 @@ export const GuardiansPage: React.FC = () => {
                 required
               />
             </div>
-            <Input
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemplo@email.com"
-              leftIcon={<Mail className="h-4 w-4" />}
-            />
+            <div>
+              <Input
+                label="E-mail de Login *"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="exemplo@email.com"
+                leftIcon={<Mail className="h-4 w-4" />}
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                🔑 Este e-mail será usado para o login no Portal dos Pais (Senha inicial: <strong>123456</strong>).
+              </span>
+            </div>
             <Select
               label="Parentesco *"
               options={RELATIONSHIP_OPTIONS}
