@@ -11,9 +11,21 @@ import { prisma } from '../config/database';
 export const getGuardianChildren = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
+    const userEmail = req.user!.email;
 
-    // Find the guardian record linked to this user
-    const guardian = await prisma.guardian.findUnique({ where: { userId } });
+    // Find the guardian record linked to this user or matching email
+    let guardian = await prisma.guardian.findUnique({ where: { userId } });
+    if (!guardian && userEmail) {
+      guardian = await prisma.guardian.findFirst({ where: { email: userEmail } });
+      if (guardian) {
+        // Auto-link userId for seamless future queries
+        await prisma.guardian.update({
+          where: { id: guardian.id },
+          data: { userId },
+        }).catch(() => {});
+      }
+    }
+
     if (!guardian) {
       return res
         .status(404)
