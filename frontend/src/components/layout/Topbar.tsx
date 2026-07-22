@@ -9,12 +9,14 @@ interface TopbarProps {
   toggleMobileSidebar: () => void;
   breadcrumbItems?: BreadcrumbItem[];
   onProfileClick?: () => void;
+  onSelectStudent?: (studentId: string) => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
   toggleMobileSidebar,
   breadcrumbItems = [],
   onProfileClick,
+  onSelectStudent,
 }) => {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
@@ -55,7 +57,7 @@ export const Topbar: React.FC<TopbarProps> = ({
       try {
         setLoading(true);
         const res = await api.get('/students', {
-          params: { search: query, limit: 10 },
+          params: { search: query, limit: 100 },
         });
         setResults(res.data.data.students || []);
         setIsOpen(true);
@@ -137,9 +139,10 @@ export const Topbar: React.FC<TopbarProps> = ({
           )}
 
           {isOpen && (
-            <div className="absolute top-11 left-0 right-0 bg-card border border-border rounded-lg shadow-xl max-h-80 overflow-y-auto z-50 p-2 space-y-1">
-              <div className="text-[9px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider">
-                Alunos Encontrados ({results.length})
+            <div className="absolute top-11 left-0 right-0 bg-card border border-border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50 p-2 space-y-1">
+              <div className="text-[9px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider flex justify-between items-center">
+                <span>Alunos Encontrados ({results.length})</span>
+                <span className="text-[8px] text-primary/70 font-normal">Clique para abrir/editar</span>
               </div>
               {results.length === 0 ? (
                 <div className="text-xs text-muted-foreground text-center py-4">
@@ -158,9 +161,22 @@ export const Topbar: React.FC<TopbarProps> = ({
                   return (
                     <div
                       key={student.id}
-                      className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-secondary/60 cursor-default transition-colors text-left"
+                      onClick={() => {
+                        if (onSelectStudent) {
+                          onSelectStudent(student.id);
+                          setIsOpen(false);
+                        }
+                      }}
+                      className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-primary/10 hover:border-primary/20 border border-transparent cursor-pointer transition-colors text-left group"
                     >
-                      <div className="text-xs font-bold text-foreground">{name}</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {name}
+                        </span>
+                        <span className="text-[9px] text-primary opacity-0 group-hover:opacity-100 font-medium transition-opacity">
+                          Ver ficha &rarr;
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-sans">
                         <span>CPF {cpf}</span>
                         <span className="font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded text-[9px] font-sans">

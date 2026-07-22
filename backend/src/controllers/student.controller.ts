@@ -300,21 +300,24 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
       user: {},
     };
 
-    // Text Search in FirstName, LastName, CPF, RG, E-mail
+    // Text Search in FirstName, LastName, CPF, RG, E-mail, Registration Number (Case-Insensitive)
     if (search) {
-      const searchStr = search as string;
+      const searchStr = (search as string).trim();
+      const terms = searchStr.split(/\s+/).filter(Boolean);
+
       where.OR = [
-        { cpf: { contains: searchStr } },
-        { rg: { contains: searchStr } },
+        { cpf: { contains: searchStr, mode: 'insensitive' } },
+        { rg: { contains: searchStr, mode: 'insensitive' } },
+        { registrationNumber: { contains: searchStr, mode: 'insensitive' } },
         {
           user: {
             OR: [
-              { email: { contains: searchStr } },
+              { email: { contains: searchStr, mode: 'insensitive' } },
               {
                 profile: {
                   OR: [
-                    { firstName: { contains: searchStr } },
-                    { lastName: { contains: searchStr } },
+                    { firstName: { contains: searchStr, mode: 'insensitive' } },
+                    { lastName: { contains: searchStr, mode: 'insensitive' } },
                   ],
                 },
               },
@@ -322,6 +325,22 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
           },
         },
       ];
+
+      // If user typed multiple search terms (e.g., "Ana Silva"), match both across profile first/last names
+      if (terms.length > 1) {
+        where.OR.push({
+          user: {
+            profile: {
+              AND: terms.map((t) => ({
+                OR: [
+                  { firstName: { contains: t, mode: 'insensitive' } },
+                  { lastName: { contains: t, mode: 'insensitive' } },
+                ],
+              })),
+            },
+          },
+        });
+      }
     }
 
     // Categorical Filters

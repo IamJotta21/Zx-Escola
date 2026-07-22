@@ -8,6 +8,8 @@ import { Drawer } from '../components/ui/Drawer';
 import { Badge } from '../components/ui/Badge';
 import api from '../services/api';
 
+import StudentDetailsDrawer from '../components/layout/StudentDetailsDrawer';
+
 export const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
@@ -17,6 +19,15 @@ export const DashboardLayout: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [profileData, setProfileData] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // Global Student Details Drawer states
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [isStudentDrawerOpen, setIsStudentDrawerOpen] = useState(false);
+
+  const handleSelectStudent = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setIsStudentDrawerOpen(true);
+  };
 
   useEffect(() => {
     if (isProfileDrawerOpen && user?.role === 'TEACHER') {
@@ -86,6 +97,7 @@ export const DashboardLayout: React.FC = () => {
           toggleMobileSidebar={toggleMobileSidebar}
           breadcrumbItems={getBreadcrumbItems()}
           onProfileClick={() => setIsProfileDrawerOpen(true)}
+          onSelectStudent={handleSelectStudent}
         />
 
         {/* Dynamic viewport pane */}
@@ -196,6 +208,13 @@ export const DashboardLayout: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Global Student Details Drawer */}
+      <StudentDetailsDrawer
+        studentId={selectedStudentId}
+        isOpen={isStudentDrawerOpen}
+        onClose={() => setIsStudentDrawerOpen(false)}
+      />
     </div>
   );
 };
