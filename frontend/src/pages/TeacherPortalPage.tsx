@@ -983,13 +983,13 @@ export const TeacherPortalPage: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
-                    {dashboard && dashboard.stats.subjects.length === 0 ? (
+                    {!dashboard?.stats?.subjects || dashboard.stats.subjects.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic">
                         Nenhuma disciplina cadastrada.
                       </p>
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-3">
-                        {dashboard?.stats.subjects.map((sub, idx) => (
+                        {(dashboard?.stats?.subjects || []).map((sub, idx) => (
                           <div
                             key={idx}
                             className="flex items-center gap-3 p-4 rounded-xl border border-border bg-secondary/5 font-sans"
@@ -1028,15 +1028,15 @@ export const TeacherPortalPage: React.FC = () => {
                         <div className="grid sm:grid-cols-3 gap-4">
                           <Select
                             label="Selecione a Turma *"
-                            options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                            options={(classes || []).map((c) => ({ value: c.id, label: c.name }))}
                             value={selectedClassId}
                             onChange={(e) => setSelectedClassId(e.target.value)}
                           />
                           <Select
                             label="Selecione a Disciplina *"
                             options={
-                              dashboard
-                                ? dashboard.stats.subjects.map((s) => ({ value: s, label: s }))
+                              dashboard?.stats?.subjects
+                                ? (dashboard.stats.subjects || []).map((s) => ({ value: s, label: s }))
                                 : []
                             }
                             value={selectedSubject}
@@ -1206,7 +1206,7 @@ export const TeacherPortalPage: React.FC = () => {
                     <div className="grid sm:grid-cols-2 gap-3 flex-1">
                       <Select
                         label="Turma"
-                        options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                        options={(classes || []).map((c) => ({ value: c.id, label: c.name }))}
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
                       />
@@ -1340,15 +1340,15 @@ export const TeacherPortalPage: React.FC = () => {
                     <div className="grid sm:grid-cols-2 gap-3 flex-1">
                       <Select
                         label="Selecionar Turma"
-                        options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                        options={(classes || []).map((c) => ({ value: c.id, label: c.name }))}
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
                       />
                       <Select
                         label="Selecionar Disciplina"
                         options={
-                          dashboard
-                            ? dashboard.stats.subjects.map((s) => ({ value: s, label: s }))
+                          dashboard?.stats?.subjects
+                            ? (dashboard.stats.subjects || []).map((s) => ({ value: s, label: s }))
                             : []
                         }
                         value={selectedSubject}

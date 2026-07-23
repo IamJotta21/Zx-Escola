@@ -309,15 +309,15 @@ export const TeachersPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teachers.map((t) => {
-                  const tName = t.user.profile
-                    ? `${t.user.profile.firstName} ${t.user.profile.lastName}`
+                {(teachers || []).map((t) => {
+                  const tName = t.user?.profile
+                    ? `${t.user.profile.firstName || ''} ${t.user.profile.lastName || ''}`.trim()
                     : 'Sem nome';
                   return (
                     <TableRow key={t.id} className="group">
                       <TableCell>
                         <div className="font-semibold text-foreground text-sm">{tName}</div>
-                        <div className="text-xs text-muted-foreground">{t.user.email}</div>
+                        <div className="text-xs text-muted-foreground">{t.user?.email || 'Sem e-mail'}</div>
                       </TableCell>
                       <TableCell>
                         {t.subjects ? (
@@ -337,12 +337,12 @@ export const TeachersPage: React.FC = () => {
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs font-semibold text-foreground">
                           <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          {t.workload}h semanais
+                          {t.workload ?? 0}h semanais
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-0.5 text-xs">
-                          {t.user.profile?.phone && (
+                          {t.user?.profile?.phone && (
                             <div className="flex items-center gap-1 text-foreground">
                               <Phone className="h-3 w-3 text-muted-foreground" />
                               {t.user.profile.phone}
@@ -350,16 +350,16 @@ export const TeachersPage: React.FC = () => {
                           )}
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Mail className="h-3 w-3" />
-                            {t.user.email}
+                            {t.user?.email || 'N/A'}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {t.classes.length === 0 ? (
+                        {!t.classes || t.classes.length === 0 ? (
                           <span className="text-xs text-muted-foreground italic">Nenhuma</span>
                         ) : (
                           <div className="flex items-center gap-1 flex-wrap">
-                            {t.classes.map((cls) => (
+                            {(t.classes || []).map((cls) => (
                               <Badge key={cls.id} variant="success" className="text-[10px]">
                                 {cls.name}
                               </Badge>
@@ -513,7 +513,7 @@ export const TeachersPage: React.FC = () => {
         onClose={() => setIsScheduleViewOpen(false)}
         title={
           selectedTeacherForSchedule
-            ? `Agenda: ${selectedTeacherForSchedule.user.profile?.firstName} ${selectedTeacherForSchedule.user.profile?.lastName}`
+            ? `Agenda: ${selectedTeacherForSchedule.user?.profile?.firstName || ''} ${selectedTeacherForSchedule.user?.profile?.lastName || ''}`.trim()
             : 'Agenda'
         }
         size="md"
