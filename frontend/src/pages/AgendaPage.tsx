@@ -69,6 +69,13 @@ const TARGET_TYPES = [
   { value: 'CLASS', label: 'Turma Específica' },
 ];
 
+const formatLocalDate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export const AgendaPage: React.FC = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -80,7 +87,7 @@ export const AgendaPage: React.FC = () => {
   // Selected date state
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    formatLocalDate(new Date())
   );
 
   // Data state
@@ -116,9 +123,13 @@ export const AgendaPage: React.FC = () => {
       if (filterType) params.eventType = filterType;
       if (filterTarget) params.target = filterTarget;
       const res = await api.get('/calendar/events', { params });
-      setEvents(res.data.data || []);
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : (Array.isArray(res.data?.data?.events) ? res.data.data.events : []);
+      setEvents(list);
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar eventos da agenda escolar.' });
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -127,9 +138,12 @@ export const AgendaPage: React.FC = () => {
   const fetchClasses = useCallback(async () => {
     try {
       const res = await api.get('/classes');
-      setClasses(res.data.data || []);
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : (Array.isArray(res.data?.data?.classes) ? res.data.data.classes : []);
+      setClasses(list);
     } catch {
-      /* silent */
+      setClasses([]);
     }
   }, []);
 
@@ -243,13 +257,14 @@ export const AgendaPage: React.FC = () => {
 
   const handleToday = () => {
     setCurrentDate(new Date());
-    setSelectedDateStr(new Date().toISOString().split('T')[0]);
+    setSelectedDateStr(formatLocalDate(new Date()));
   };
 
   // Filtered Events
-  const filteredEvents = events.filter((e) => {
+  const filteredEvents = (events || []).filter((e) => {
+    if (!e) return false;
     const matchesSearch =
-      e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (e.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.description && e.description.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
   });
@@ -268,38 +283,37 @@ export const AgendaPage: React.FC = () => {
   // Trailing days from previous month
   const prevMonthLastDay = new Date(year, month, 0).getDate();
   for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+    const d = new Date(year, month - 1, prevMonthLastDay - i);
     calendarCells.push({
-      dayNumber: prevMonthLastDay - i,
+      dayNumber: d.getDate(),
       isCurrentMonth: false,
-      dateStr: new Date(year, month - 1, prevMonthLastDay - i + 1).toISOString().split('T')[0],
+      dateStr: formatLocalDate(d),
     });
   }
   // Days of current month
   for (let day = 1; day <= totalDaysInMonth; day++) {
-    const mStr = String(month + 1).padStart(2, '0');
-    const dStr = String(day).padStart(2, '0');
+    const d = new Date(year, month, day);
     calendarCells.push({
       dayNumber: day,
       isCurrentMonth: true,
-      dateStr: `${year}-${mStr}-${dStr}`,
+      dateStr: formatLocalDate(d),
     });
   }
-  // Leading days for next month to complete 35 or 42 grid
+  // Leading days for next month to complete grid
   const remainingCells = (7 - (calendarCells.length % 7)) % 7;
   for (let i = 1; i <= remainingCells; i++) {
-    const mStr = String(month + 2).padStart(2, '0');
-    const dStr = String(i).padStart(2, '0');
+    const d = new Date(year, month + 1, i);
     calendarCells.push({
       dayNumber: i,
       isCurrentMonth: false,
-      dateStr: `${year}-${mStr}-${dStr}`,
+      dateStr: formatLocalDate(d),
     });
   }
 
   // Get events on specific date
   const getEventsForDate = (dateStr: string) => {
-    return filteredEvents.filter(
-      (e) => e.startDate === dateStr || (e.endDate && dateStr >= e.startDate && dateStr <= e.endDate)
+    return (filteredEvents || []).filter(
+      (e) => e && (e.startDate === dateStr || (e.endDate && dateStr >= e.startDate && dateStr <= e.endDate))
     );
   };
 
@@ -479,10 +493,10 @@ export const AgendaPage: React.FC = () => {
               ))}
 
               {/* Grid Cells */}
-              {calendarCells.map((cell, idx) => {
-                const dateEvents = getEventsForDate(cell.dateStr);
+              {(calendarCells || []).map((cell, idx) => {
+                const dateEvents = getEventsForDate(cell.dateStr) || [];
                 const isSelected = selectedDateStr === cell.dateStr;
-                const isToday = cell.dateStr === new Date().toISOString().split('T')[0];
+                const isToday = cell.dateStr === formatLocalDate(new Date());
 
                 return (
                   <div
@@ -513,7 +527,7 @@ export const AgendaPage: React.FC = () => {
 
                     {/* Event Pill Chips */}
                     <div className="space-y-1 my-1 overflow-hidden max-h-[70px]">
-                      {dateEvents.slice(0, 3).map((ev) => (
+                      {(dateEvents || []).slice(0, 3).map((ev) => (
                         <div
                           key={ev.id}
                           onClick={(e) => {
@@ -562,10 +576,10 @@ export const AgendaPage: React.FC = () => {
       {/* VIEW MODE 2: WEEKLY VIEW */}
       {viewMode === 'weekly' && (
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-          {weekDays.map((dateObj, idx) => {
-            const dateStr = dateObj.toISOString().split('T')[0];
-            const dayEvents = getEventsForDate(dateStr);
-            const isToday = dateStr === new Date().toISOString().split('T')[0];
+          {(weekDays || []).map((dateObj, idx) => {
+            const dateStr = formatLocalDate(dateObj);
+            const dayEvents = getEventsForDate(dateStr) || [];
+            const isToday = dateStr === formatLocalDate(new Date());
 
             return (
               <Card
@@ -626,14 +640,14 @@ export const AgendaPage: React.FC = () => {
             )}
           </CardHeader>
           <CardContent className="p-6">
-            {getEventsForDate(selectedDateStr).length === 0 ? (
+            {(getEventsForDate(selectedDateStr) || []).length === 0 ? (
               <div className="text-center py-10 text-muted-foreground space-y-2">
                 <CalendarIcon className="h-10 w-10 mx-auto text-muted-foreground/40" />
                 <p className="text-xs">Nenhum evento agendado para a data selecionada ({selectedDateStr}).</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {getEventsForDate(selectedDateStr).map((ev) => (
+                {(getEventsForDate(selectedDateStr) || []).map((ev) => (
                   <div
                     key={ev.id}
                     className="p-4 rounded-xl border border-border/80 bg-card hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -746,7 +760,7 @@ export const AgendaPage: React.FC = () => {
               <label className="text-xs font-bold text-foreground block mb-1">Turma Específica</label>
               <Select value={formClassId} onChange={(e) => setFormClassId(e.target.value)}>
                 <option value="">Selecione a turma...</option>
-                {classes.map((cls) => (
+                {(classes || []).map((cls) => (
                   <option key={cls.id} value={cls.id}>
                     {cls.name}
                   </option>

@@ -366,7 +366,7 @@ export const SuperAdminPage: React.FC = () => {
               </CardHeader>
               <CardContent className="p-4 pt-6">
                 <div className="h-44 flex items-end justify-between gap-3">
-                  {charts.schoolsGrowth.map((item, idx) => (
+                  {(charts?.schoolsGrowth || []).map((item, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                       <span className="text-[10px] font-bold font-mono text-primary">{item.total}</span>
                       <div className="w-full bg-secondary/50 rounded-t-lg h-32 flex items-end p-1">
@@ -391,7 +391,7 @@ export const SuperAdminPage: React.FC = () => {
               </CardHeader>
               <CardContent className="p-4 pt-6">
                 <div className="h-44 flex items-end justify-between gap-3">
-                  {charts.revenueGrowth.map((item, idx) => (
+                  {(charts?.revenueGrowth || []).map((item, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                       <span className="text-[10px] font-bold font-mono text-emerald-600">
                         {((item?.total || 0) / 1000).toFixed(0)}k

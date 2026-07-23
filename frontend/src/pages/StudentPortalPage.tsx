@@ -739,12 +739,12 @@ export const StudentPortalPage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  {schedule.contents.length === 0 ? (
+                  {!schedule?.contents || schedule.contents.length === 0 ? (
                     <p className="text-center py-6 text-muted-foreground text-xs">
                       Nenhum conteúdo letivo disponibilizado para a turma.
                     </p>
                   ) : (
-                    schedule.contents.map((item) => (
+                    (schedule.contents || []).map((item) => (
                       <div
                         key={item.id}
                         className="p-4 rounded-xl border border-border/80 bg-background/50 hover:bg-slate-500/5 transition-colors flex items-start gap-4"
