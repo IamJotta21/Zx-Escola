@@ -238,7 +238,7 @@ export const ParentPortalPage: React.FC = () => {
   };
 
   const handleCopyPixKey = (tuition: Tuition) => {
-    const fakePixKey = `00020126360014BR.GOV.BCB.PIX0114+5511999999999520400005303986540${tuition.finalValue.toFixed(2)}5802BR5916ZX-ESCOLA ENSI6009SAO PAULO62070503***6304`;
+    const fakePixKey = `00020126360014BR.GOV.BCB.PIX0114+5511999999999520400005303986540${(tuition?.finalValue ?? 0).toFixed(2)}5802BR5916ZX-ESCOLA ENSI6009SAO PAULO62070503***6304`;
     navigator.clipboard.writeText(fakePixKey);
     addToast({ type: 'success', message: 'Chave PIX copiada para a área de transferência!' });
   };
@@ -495,7 +495,7 @@ export const ParentPortalPage: React.FC = () => {
                       <div>
                         <div className="text-xs text-muted-foreground font-semibold">Mensalidades a Pagar</div>
                         <div className="text-2xl font-black text-rose-500 mt-1">
-                          R$ {pendingTotal.toFixed(2)}
+                          R$ {(pendingTotal ?? 0).toFixed(2)}
                         </div>
                       </div>
                       <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
@@ -559,7 +559,7 @@ export const ParentPortalPage: React.FC = () => {
                               <div className="text-[10px] text-muted-foreground font-mono">Venc: {t.dueDate}</div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-xs">R$ {t.finalValue.toFixed(2)}</span>
+                              <span className="font-mono font-bold text-xs">R$ {(t?.finalValue ?? 0).toFixed(2)}</span>
                               {getTuitionBadge(t.status)}
                             </div>
                           </div>
@@ -783,7 +783,7 @@ export const ParentPortalPage: React.FC = () => {
                             <TableCell className="font-semibold text-foreground">{t.description}</TableCell>
                             <TableCell className="font-mono text-xs">{t.dueDate}</TableCell>
                             <TableCell className="text-center font-mono font-bold text-xs">
-                              R$ {t.finalValue.toFixed(2)}
+                              R$ {(t?.finalValue ?? 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-center">{getTuitionBadge(t.status)}</TableCell>
                             <TableCell className="text-right flex items-center justify-end gap-2">

@@ -184,6 +184,7 @@ export const FinancialPage: React.FC = () => {
   const fetchSummary = useCallback(async () => {
     try {
       const res = await api.get('/financial/summary');
+      const data = res.data?.data || {};
       setSummary(data.summary || {
         totalRevenues: 0,
         totalExpenses: 0,
@@ -482,7 +483,7 @@ export const FinancialPage: React.FC = () => {
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-600" /> Receita do Mês
               </div>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                R$ {summary.monthRevenue.toFixed(2)}
+                R$ {(summary?.monthRevenue ?? 0).toFixed(2)}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
                 Total arrecadado no mês vigente
@@ -502,10 +503,10 @@ export const FinancialPage: React.FC = () => {
                 <AlertTriangle className="h-3.5 w-3.5 text-rose-500" /> Inadimplência
               </div>
               <div className="text-2xl font-black text-rose-500 mt-1">
-                {summary.defaultRate}%
+                {summary?.defaultRate ?? 0}%
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {summary.overdueCount} parcela(s) • R$ {summary.overdueSum.toFixed(2)}
+                {summary?.overdueCount ?? 0} parcela(s) • R$ {(summary?.overdueSum ?? 0).toFixed(2)}
               </div>
             </div>
             <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
@@ -522,10 +523,10 @@ export const FinancialPage: React.FC = () => {
                 <CheckCircle2 className="h-3.5 w-3.5 text-indigo-500" /> Mensalidades Pagas
               </div>
               <div className="text-2xl font-black text-foreground mt-1">
-                {summary.paidCount}
+                {summary?.paidCount ?? 0}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                Soma: R$ {summary.paidSum.toFixed(2)}
+                Soma: R$ {(summary?.paidSum ?? 0).toFixed(2)}
               </div>
             </div>
             <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-600">
@@ -542,10 +543,10 @@ export const FinancialPage: React.FC = () => {
                 <Clock className="h-3.5 w-3.5 text-amber-500" /> Mensalidades Pendentes
               </div>
               <div className="text-2xl font-black text-foreground mt-1">
-                {summary.pendingCount}
+                {summary?.pendingCount ?? 0}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                A vencer: R$ {summary.pendingSum.toFixed(2)}
+                A vencer: R$ {(summary?.pendingSum ?? 0).toFixed(2)}
               </div>
             </div>
             <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
@@ -593,14 +594,14 @@ export const FinancialPage: React.FC = () => {
                 <div className="flex justify-between items-center p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                   <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Total de Receitas</span>
                   <span className="text-base font-black font-mono text-emerald-700 dark:text-emerald-400">
-                    + R$ {summary.totalRevenues.toFixed(2)}
+                    + R$ {(summary?.totalRevenues ?? 0).toFixed(2)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
                   <span className="text-xs font-bold text-rose-800 dark:text-rose-300">Total de Despesas</span>
                   <span className="text-base font-black font-mono text-rose-600 dark:text-rose-400">
-                    - R$ {summary.totalExpenses.toFixed(2)}
+                    - R$ {(summary?.totalExpenses ?? 0).toFixed(2)}
                   </span>
                 </div>
 
@@ -608,10 +609,10 @@ export const FinancialPage: React.FC = () => {
                   <span className="text-sm font-extrabold text-foreground">Saldo em Caixa</span>
                   <span
                     className={`text-lg font-black font-mono ${
-                      summary.balance >= 0 ? 'text-emerald-600' : 'text-rose-500'
+                      (summary?.balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-500'
                     }`}
                   >
-                    R$ {summary.balance.toFixed(2)}
+                    R$ {(summary?.balance ?? 0).toFixed(2)}
                   </span>
                 </div>
               </CardContent>
@@ -648,7 +649,7 @@ export const FinancialPage: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-xs font-black text-rose-600 font-mono">
-                          R$ {item.finalValue.toFixed(2)}
+                          R$ {(item?.finalValue ?? 0).toFixed(2)}
                         </div>
                         <Button
                           variant="ghost"
@@ -810,23 +811,23 @@ export const FinancialPage: React.FC = () => {
                         </TableCell>
 
                         <TableCell className="text-center font-mono text-xs">
-                          R$ {item.value.toFixed(2)}
+                          R$ {(item?.value ?? 0).toFixed(2)}
                         </TableCell>
 
                         <TableCell className="text-center font-mono text-xs text-emerald-600">
-                          {item.discount > 0 ? `R$ ${item.discount.toFixed(2)}` : ''}
+                          {item.discount > 0 ? `R$ ${(item?.discount ?? 0).toFixed(2)}` : ''}
                           {item.scholarshipPercent > 0 ? ` (${item.scholarshipPercent}%)` : ''}
                           {item.discount === 0 && item.scholarshipPercent === 0 ? '—' : ''}
                         </TableCell>
 
                         <TableCell className="text-center font-mono text-xs text-rose-500">
                           {item.fine > 0 || item.interest > 0
-                            ? `R$ ${(item.fine + item.interest).toFixed(2)}`
+                            ? `R$ ${((item?.fine || 0) + (item?.interest || 0)).toFixed(2)}`
                             : '—'}
                         </TableCell>
 
                         <TableCell className="text-center font-black font-mono text-xs text-foreground">
-                          R$ {item.finalValue.toFixed(2)}
+                          R$ {(item?.finalValue ?? 0).toFixed(2)}
                         </TableCell>
 
                         <TableCell className="text-center">
@@ -925,7 +926,7 @@ export const FinancialPage: React.FC = () => {
                       <TableCell className="text-center font-mono text-xs">{t.paymentMethod || '—'}</TableCell>
                       <TableCell className="text-right font-black font-mono text-xs">
                         <span className={t.type === 'RECEITA' ? 'text-emerald-600' : 'text-rose-500'}>
-                          {t.type === 'RECEITA' ? '+' : '-'} R$ {t.value.toFixed(2)}
+                          {t.type === 'RECEITA' ? '+' : '-'} R$ {(t?.value ?? 0).toFixed(2)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -1040,7 +1041,7 @@ export const FinancialPage: React.FC = () => {
                             {item.paymentMethod || 'PIX'}
                           </TableCell>
                           <TableCell className="text-right font-black font-mono text-xs text-emerald-600">
-                            R$ {item.finalValue.toFixed(2)}
+                            R$ {(item?.finalValue ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -1112,13 +1113,13 @@ export const FinancialPage: React.FC = () => {
                             {item.dueDate}
                           </TableCell>
                           <TableCell className="text-center font-mono text-xs">
-                            R$ {item.value.toFixed(2)}
+                            R$ {(item?.value ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-center font-mono text-xs text-emerald-600">
-                            {item.discount > 0 ? `R$ ${item.discount.toFixed(2)}` : '—'}
+                            {item.discount > 0 ? `R$ ${(item?.discount ?? 0).toFixed(2)}` : '—'}
                           </TableCell>
                           <TableCell className="text-right font-black font-mono text-xs text-foreground">
-                            R$ {item.finalValue.toFixed(2)}
+                            R$ {(item?.finalValue ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -1200,13 +1201,13 @@ export const FinancialPage: React.FC = () => {
                               {item.dueDate}
                             </TableCell>
                             <TableCell className="text-center font-mono text-xs">
-                              R$ {netBase.toFixed(2)}
+                              R$ {(netBase ?? 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-center font-mono text-xs text-rose-600 font-bold">
-                              + R$ {estimatedFineInterest.toFixed(2)}
+                              + R$ {(estimatedFineInterest ?? 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right font-black font-mono text-xs text-rose-600">
-                              R$ {updatedVal.toFixed(2)}
+                              R$ {(updatedVal ?? 0).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
@@ -1324,7 +1325,7 @@ export const FinancialPage: React.FC = () => {
               <div>Aluno: <strong>{getStudentName(payingTuitionItem.student)}</strong></div>
               <div>Descrição: <strong>{payingTuitionItem.description}</strong></div>
               <div>Vencimento: <strong>{payingTuitionItem.dueDate}</strong></div>
-              <div>Valor Previsto: <strong>R$ {payingTuitionItem.finalValue.toFixed(2)}</strong></div>
+              <div>Valor Previsto: <strong>R$ {(payingTuitionItem?.finalValue ?? 0).toFixed(2)}</strong></div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">

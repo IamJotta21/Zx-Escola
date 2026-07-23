@@ -1256,7 +1256,7 @@ const DashboardPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {classAverage.toFixed(1)} / 10
+                  {(classAverage ?? 0).toFixed(1)} / 10
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   Média dos alunos das suas turmas
@@ -1281,7 +1281,7 @@ const DashboardPage: React.FC = () => {
                     Média Geral da Sala
                   </span>
                   <div className="text-4xl font-extrabold text-primary font-mono">
-                    {classAverage.toFixed(1)}{' '}
+                    {(classAverage ?? 0).toFixed(1)}{' '}
                     <span className="text-xs text-muted-foreground font-normal">/ 10</span>
                   </div>
                 </div>
@@ -1309,14 +1309,14 @@ const DashboardPage: React.FC = () => {
                     <div className="flex justify-between text-xs font-medium mb-1">
                       <span className="text-muted-foreground">Média dos Destaques (Top 3)</span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                        {topAverage.toFixed(1)}
+                        {(topAverage ?? 0).toFixed(1)}
                       </span>
                     </div>
                     <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-emerald-400 h-full"
                         style={{
-                          width: `${topAverage * 10}%`,
+                          width: `${(topAverage ?? 0) * 10}%`,
                         }}
                       />
                     </div>
@@ -1326,7 +1326,7 @@ const DashboardPage: React.FC = () => {
                     <div className="flex justify-between text-xs font-medium mb-1">
                       <span className="text-muted-foreground">Média dos Alunos em Atenção</span>
                       <span className="text-rose-600 dark:text-rose-400 font-bold">
-                        {bottomAverage.toFixed(1)}
+                        {(bottomAverage ?? 0).toFixed(1)}
                       </span>
                     </div>
                     <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
@@ -1376,7 +1376,7 @@ const DashboardPage: React.FC = () => {
                             {s.classroom}
                           </TableCell>
                           <TableCell className="text-right font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
-                            {s.grade.toFixed(1)}
+                            {(s?.grade ?? 0).toFixed(1)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1419,7 +1419,7 @@ const DashboardPage: React.FC = () => {
                             {s.classroom}
                           </TableCell>
                           <TableCell className="text-right font-mono font-bold text-sm text-rose-600 dark:text-rose-400">
-                            {s.grade.toFixed(1)}
+                            {(s?.grade ?? 0).toFixed(1)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1497,7 +1497,7 @@ const DashboardPage: React.FC = () => {
                     <TableCell className="font-mono text-xs font-semibold">{inv.id}</TableCell>
                     <TableCell className="font-bold text-sm">{inv.student}</TableCell>
                     <TableCell className="font-semibold text-xs">
-                      R$ {inv.value.toFixed(2)}
+                      R$ {(inv?.value ?? 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-xs">{inv.dueDate}</TableCell>
                     <TableCell>

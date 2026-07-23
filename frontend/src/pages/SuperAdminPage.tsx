@@ -314,10 +314,10 @@ export const SuperAdminPage: React.FC = () => {
             <div>
               <div className="text-xs text-muted-foreground font-semibold">Receita Mensal SaaS</div>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                R$ {summary.monthlyRevenue.toFixed(2)}
+                R$ {(summary?.monthlyRevenue ?? 0).toFixed(2)}
               </div>
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                Total histórico: R$ {summary.totalRevenue.toFixed(2)}
+                Total histórico: R$ {(summary?.totalRevenue ?? 0).toFixed(2)}
               </div>
             </div>
             <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
@@ -392,7 +392,7 @@ export const SuperAdminPage: React.FC = () => {
                   {charts.revenueGrowth.map((item, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                       <span className="text-[10px] font-bold font-mono text-emerald-600">
-                        {(item.total / 1000).toFixed(0)}k
+                        {((item?.total || 0) / 1000).toFixed(0)}k
                       </span>
                       <div className="w-full bg-secondary/50 rounded-t-lg h-32 flex items-end p-1">
                         <div

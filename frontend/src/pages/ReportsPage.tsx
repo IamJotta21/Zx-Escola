@@ -87,24 +87,27 @@ interface ReportsPayload {
 
 const DEFAULT_REPORTS_DATA: ReportsPayload = {
   financial: {
-    totalRevenue: 0,
+    totalRevenues: 0,
     totalExpenses: 0,
-    netResult: 0,
-    defaultRate: 0,
+    balance: 0,
+    revenuesByCategory: {},
+    expensesByCategory: {},
+    paymentMethods: {},
     monthlyCashflow: [],
   },
   tuitions: {
-    totalExpected: 0,
-    totalCollected: 0,
-    totalPending: 0,
-    totalOverdue: 0,
-    collectionRate: 0,
+    paid: { value: 0, qty: 0 },
+    pending: { value: 0, qty: 0 },
+    overdue: { value: 0, qty: 0 },
   },
   academic: {
-    avgGrade: 0,
-    passRate: 0,
-    attendanceRate: 0,
     gradesBySubject: [],
+    statusReport: {
+      aprovado: 0,
+      reprovado: 0,
+      recuperacao: 0,
+      cursando: 0,
+    },
   },
   classes: [],
   students: { total: 0, byStatus: {}, byGender: {} },
@@ -135,11 +138,20 @@ export const ReportsPage: React.FC = () => {
       // Merge received data with defaults to guarantee all fields exist
       const received = res.data.data || {};
       setData({
-        ...DEFAULT_REPORTS_DATA,
-        ...received,
         financial: { ...DEFAULT_REPORTS_DATA.financial, ...(received.financial || {}) },
-        academic:  { ...DEFAULT_REPORTS_DATA.academic,  ...(received.academic  || {}) },
-        tuitions:  { ...DEFAULT_REPORTS_DATA.tuitions,  ...(received.tuitions  || {}) },
+        academic:  {
+          ...DEFAULT_REPORTS_DATA.academic,
+          ...(received.academic || {}),
+          statusReport: {
+            ...DEFAULT_REPORTS_DATA.academic.statusReport,
+            ...(received.academic?.statusReport || {}),
+          },
+        },
+        tuitions:  {
+          paid: { value: 0, qty: 0, ...(received.tuitions?.paid || {}) },
+          pending: { value: 0, qty: 0, ...(received.tuitions?.pending || {}) },
+          overdue: { value: 0, qty: 0, ...(received.tuitions?.overdue || {}) },
+        },
         students:  { ...DEFAULT_REPORTS_DATA.students,  ...(received.students  || {}) },
         classes:   received.classes  || [],
         teachers:  received.teachers || [],
@@ -227,37 +239,37 @@ export const ReportsPage: React.FC = () => {
     let name = '';
 
     if (type === 'cashflow') {
-      csvData = data.financial.monthlyCashflow.map((c) => ({
+      csvData = (data.financial?.monthlyCashflow || []).map((c) => ({
         Mes: c.month,
-        Receitas: c.revenues.toFixed(2),
-        Despesas: c.expenses.toFixed(2),
-        Saldo: (c.revenues - c.expenses).toFixed(2),
+        Receitas: (c?.revenues ?? 0).toFixed(2),
+        Despesas: (c?.expenses ?? 0).toFixed(2),
+        Saldo: ((c?.revenues ?? 0) - (c?.expenses ?? 0)).toFixed(2),
       }));
       headers = ['Mês', 'Receitas', 'Despesas', 'Saldo'];
       name = 'fluxo_de_caixa.csv';
     } else if (type === 'subjects') {
-      csvData = data.academic.gradesBySubject.map((s) => ({
+      csvData = (data.academic?.gradesBySubject || []).map((s) => ({
         Disciplina: s.subject,
         TotalAlunos: s.count,
-        MediaGeral: s.average.toFixed(2),
+        MediaGeral: (s?.average ?? 0).toFixed(2),
       }));
       headers = ['Disciplina', 'Alunos com Nota', 'Média Geral'];
       name = 'desempenho_disciplinas.csv';
     } else if (type === 'classes') {
-      csvData = data.classes.map((c) => ({
+      csvData = (data.classes || []).map((c) => ({
         Turma: c.name,
         QtdAlunos: c.studentsCount,
-        MediaNotas: c.avgGrade.toFixed(2),
+        MediaNotas: (c?.avgGrade ?? 0).toFixed(2),
         FrequenciaMedia: `${c.attendancePercent}%`,
       }));
       headers = ['Turma', 'Qtd Alunos', 'Média Notas', 'Frequência Média'];
       name = 'relatorio_turmas.csv';
     } else if (type === 'teachers') {
-      csvData = data.teachers.map((t) => ({
+      csvData = (data.teachers || []).map((t) => ({
         Professor: t.name,
         CargaHoraria: t.workload,
         QtdTurmas: t.classesCount,
-        Disciplinas: t.subjects.join(' | '),
+        Disciplinas: (t.subjects || []).join(' | '),
       }));
       headers = ['Professor', 'Carga Horária (h)', 'Qtd Turmas', 'Disciplinas'];
       name = 'relatorio_professores.csv';
@@ -277,15 +289,15 @@ export const ReportsPage: React.FC = () => {
     if (type === 'cashflow') {
       htmlTable +=
         '<th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th></tr></thead><tbody>';
-      data.financial.monthlyCashflow.forEach((c) => {
-        htmlTable += `<tr><td>${c.month}</td><td>R$ ${c.revenues.toFixed(2)}</td><td>R$ ${c.expenses.toFixed(2)}</td><td>R$ ${(c.revenues - c.expenses).toFixed(2)}</td></tr>`;
+      (data.financial?.monthlyCashflow || []).forEach((c) => {
+        htmlTable += `<tr><td>${c.month}</td><td>R$ ${(c?.revenues ?? 0).toFixed(2)}</td><td>R$ ${(c?.expenses ?? 0).toFixed(2)}</td><td>R$ ${((c?.revenues ?? 0) - (c?.expenses ?? 0)).toFixed(2)}</td></tr>`;
       });
       name = 'fluxo_de_caixa.xls';
     } else if (type === 'classes') {
       htmlTable +=
         '<th>Turma</th><th>Qtd Alunos</th><th>Média Notas</th><th>Frequência Média</th></tr></thead><tbody>';
-      data.classes.forEach((c) => {
-        htmlTable += `<tr><td>${c.name}</td><td>${c.studentsCount}</td><td>${c.avgGrade.toFixed(2)}</td><td>${c.attendancePercent}%</td></tr>`;
+      (data.classes || []).forEach((c) => {
+        htmlTable += `<tr><td>${c.name}</td><td>${c.studentsCount}</td><td>${(c?.avgGrade ?? 0).toFixed(2)}</td><td>${c.attendancePercent}%</td></tr>`;
       });
       name = 'relatorio_turmas.xls';
     } else if (type === 'teachers') {
@@ -546,7 +558,7 @@ export const ReportsPage: React.FC = () => {
                       TOTAL DE RECEITAS
                     </div>
                     <div className="text-xl font-black text-foreground">
-                      R$ {data.financial.totalRevenues.toFixed(2)}
+                      R$ {(data.financial?.totalRevenues ?? 0).toFixed(2)}
                     </div>
                   </CardContent>
                 </Card>
@@ -556,7 +568,7 @@ export const ReportsPage: React.FC = () => {
                       TOTAL DE DESPESAS
                     </div>
                     <div className="text-xl font-black text-foreground">
-                      R$ {data.financial.totalExpenses.toFixed(2)}
+                      R$ {(data.financial?.totalExpenses ?? 0).toFixed(2)}
                     </div>
                   </CardContent>
                 </Card>
@@ -566,7 +578,7 @@ export const ReportsPage: React.FC = () => {
                       SALDO DE CAIXA
                     </div>
                     <div className="text-xl font-black text-foreground">
-                      R$ {data.financial.balance.toFixed(2)}
+                      R$ {(data.financial?.balance ?? 0).toFixed(2)}
                     </div>
                   </CardContent>
                 </Card>
@@ -576,7 +588,7 @@ export const ReportsPage: React.FC = () => {
                       INADIMPLÊNCIA TOTAL
                     </div>
                     <div className="text-xl font-black text-foreground">
-                      R$ {data.tuitions.overdue.value.toFixed(2)}
+                      R$ {(data.tuitions?.overdue?.value ?? 0).toFixed(2)}
                     </div>
                   </CardContent>
                 </Card>
@@ -594,7 +606,7 @@ export const ReportsPage: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6 h-[180px]">
-                    {renderAreaChart(data.financial.monthlyCashflow)}
+                    {renderAreaChart(data.financial?.monthlyCashflow || [])}
                   </CardContent>
                 </Card>
 
@@ -611,9 +623,9 @@ export const ReportsPage: React.FC = () => {
                   <CardContent className="p-6">
                     {renderDonutChart(
                       [
-                        data.financial.paymentMethods['PIX'] || 0,
-                        data.financial.paymentMethods['BOLETO'] || 0,
-                        data.financial.paymentMethods['CARTAO'] || 0,
+                        data.financial?.paymentMethods?.['PIX'] || 0,
+                        data.financial?.paymentMethods?.['BOLETO'] || 0,
+                        data.financial?.paymentMethods?.['CARTAO'] || 0,
                       ],
                       ['PIX', 'Boleto Bancário', 'Cartão de Crédito'],
                       ['#10b981', '#f59e0b', '#3b82f6']
@@ -657,21 +669,21 @@ export const ReportsPage: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.financial.monthlyCashflow.map((m, idx) => (
+                      {(data.financial?.monthlyCashflow || []).map((m, idx) => (
                         <TableRow key={idx}>
                           <TableCell className="font-semibold text-foreground font-mono text-xs">
                             {m.month}
                           </TableCell>
                           <TableCell className="text-right text-emerald-600 font-mono text-xs">
-                            R$ {m.revenues.toFixed(2)}
+                            R$ {(m?.revenues ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right text-rose-500 font-mono text-xs">
-                            R$ {m.expenses.toFixed(2)}
+                            R$ {(m?.expenses ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell
-                            className={`text-right font-black font-mono text-xs ${m.revenues - m.expenses >= 0 ? 'text-primary' : 'text-rose-600'}`}
+                            className={`text-right font-black font-mono text-xs ${((m?.revenues ?? 0) - (m?.expenses ?? 0)) >= 0 ? 'text-primary' : 'text-rose-600'}`}
                           >
-                            R$ {(m.revenues - m.expenses).toFixed(2)}
+                            R$ {((m?.revenues ?? 0) - (m?.expenses ?? 0)).toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -697,30 +709,30 @@ export const ReportsPage: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
-                    {data.academic.gradesBySubject.length === 0 ? (
+                    {(data.academic?.gradesBySubject || []).length === 0 ? (
                       <p className="text-center py-10 text-muted-foreground text-xs">
                         Sem notas registradas para média.
                       </p>
                     ) : (
                       <div className="space-y-3">
-                        {data.academic.gradesBySubject.map((s, idx) => (
+                        {(data.academic?.gradesBySubject || []).map((s, idx) => (
                           <div key={idx} className="space-y-1 text-xs">
                             <div className="flex justify-between font-semibold">
                               <span className="text-foreground">{s.subject}</span>
                               <span className="text-muted-foreground font-mono">
-                                {s.average.toFixed(1)} / 10
+                                {(s?.average ?? 0).toFixed(1)} / 10
                               </span>
                             </div>
                             <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all ${
-                                  s.average >= 7
+                                  (s?.average ?? 0) >= 7
                                     ? 'bg-emerald-500'
-                                    : s.average >= 5
+                                    : (s?.average ?? 0) >= 5
                                       ? 'bg-amber-500'
                                       : 'bg-rose-500'
                                 }`}
-                                style={{ width: `${s.average * 10}%` }}
+                                style={{ width: `${(s?.average ?? 0) * 10}%` }}
                               />
                             </div>
                           </div>
@@ -743,10 +755,10 @@ export const ReportsPage: React.FC = () => {
                   <CardContent className="p-6">
                     {renderDonutChart(
                       [
-                        data.academic.statusReport.aprovado,
-                        data.academic.statusReport.recuperacao,
-                        data.academic.statusReport.reprovado,
-                        data.academic.statusReport.cursando,
+                        data.academic?.statusReport?.aprovado || 0,
+                        data.academic?.statusReport?.recuperacao || 0,
+                        data.academic?.statusReport?.reprovado || 0,
+                        data.academic?.statusReport?.cursando || 0,
                       ],
                       ['Aprovados', 'Recuperação', 'Reprovados', 'Cursando'],
                       ['#10b981', '#f59e0b', '#ef4444', '#3b82f6']
@@ -790,14 +802,14 @@ export const ReportsPage: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.classes.map((c) => (
+                      {(data.classes || []).map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-semibold text-foreground">{c.name}</TableCell>
                           <TableCell className="text-center text-xs">
                             {c.studentsCount} alunos
                           </TableCell>
                           <TableCell className="text-center font-mono font-bold text-xs">
-                            {c.avgGrade.toFixed(2)}
+                            {(c?.avgGrade ?? 0).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right text-xs">
                             <span
@@ -835,8 +847,8 @@ export const ReportsPage: React.FC = () => {
                   </CardHeader>
                   <CardContent className="p-6">
                     {renderDonutChart(
-                      Object.values(data.students.byStatus),
-                      Object.keys(data.students.byStatus),
+                      Object.values(data.students?.byStatus || {}),
+                      Object.keys(data.students?.byStatus || {}),
                       ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1']
                     )}
                   </CardContent>

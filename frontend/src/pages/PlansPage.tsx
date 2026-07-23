@@ -347,11 +347,11 @@ export const PlansPage: React.FC = () => {
                   <div className="p-3 bg-secondary/30 rounded-xl flex items-baseline justify-between">
                     <div>
                       <span className="text-xs text-muted-foreground font-medium">Mensal: </span>
-                      <span className="text-xl font-black text-primary">R$ {plan.monthlyPrice.toFixed(2)}</span>
+                      <span className="text-xl font-black text-primary">R$ {(plan?.monthlyPrice ?? 0).toFixed(2)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-muted-foreground">Anual: </span>
-                      <span className="text-xs font-bold text-foreground">R$ {plan.yearlyPrice.toFixed(2)}</span>
+                      <span className="text-xs font-bold text-foreground">R$ {(plan?.yearlyPrice ?? 0).toFixed(2)}</span>
                     </div>
                   </div>
 

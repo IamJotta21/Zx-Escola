@@ -676,7 +676,7 @@ export const LibraryPage: React.FC = () => {
                       <TableCell
                         className={l.fine > 0 ? 'text-rose-600 font-bold text-xs' : 'text-xs'}
                       >
-                        {l.fine > 0 ? `R$ ${l.fine.toFixed(2)}` : '—'}
+                        {l.fine > 0 ? `R$ ${(l?.fine ?? 0).toFixed(2)}` : '—'}
                       </TableCell>
                       <TableCell>{statusBadge(l.status)}</TableCell>
                       <TableCell className="text-right">
