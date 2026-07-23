@@ -423,6 +423,26 @@ const LoginPage: React.FC = () => {
           >
             financeiro@escola.com
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('pai@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
+            pai@escola.com
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('aluno@escola.com');
+              setPassword('123456');
+            }}
+            className="p-1 border rounded bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer text-left px-2"
+          >
+            aluno@escola.com
+          </button>
         </div>
       </div>
     </div>
