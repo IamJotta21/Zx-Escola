@@ -18,7 +18,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onProfileClick,
   onSelectStudent,
 }) => {
-  const { user } = useAuth();
+  const { user, isSupportMode, supportTenant, exitSupportMode } = useAuth();
   const [query, setQuery] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [results, setResults] = useState<any[]>([]);
@@ -335,20 +335,40 @@ export const Topbar: React.FC<TopbarProps> = ({
           )}
         </div>
 
-        {/* Super Admin Direct Shortcut Button */}
-        <button
-          onClick={() => { window.location.href = '/super-admin'; }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-500 text-xs font-black tracking-wide transition-all cursor-pointer shadow-sm"
-          title="Clique para ir direto ao Painel do Super Administrador"
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-          ⚡ Painel Super Admin
-        </button>
+        {/* Super Admin Direct Shortcut Button (Only visible for SUPER_ADMIN or when in support mode) */}
+        {(user?.role === 'SUPER_ADMIN' || isSupportMode) && (
+          <button
+            onClick={() => {
+              if (isSupportMode) {
+                exitSupportMode();
+              } else {
+                window.location.href = '/super-admin';
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-500 text-xs font-black tracking-wide transition-all cursor-pointer shadow-sm"
+            title={isSupportMode ? 'Clique para voltar ao Painel Global SaaS' : 'Clique para ir direto ao Painel do Super Administrador'}
+          >
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+            {isSupportMode ? '🛠️ Sair do Suporte' : '⚡ Painel Super Admin'}
+          </button>
+        )}
 
         {/* School Tenant Badge */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-wide">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          {user?.tenantName || 'Escola Matriz Zx-Escola'}
+        <div
+          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide border ${
+            isSupportMode
+              ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
+              : 'bg-primary/10 border-primary/20 text-primary'
+          }`}
+        >
+          <span
+            className={`h-2 w-2 rounded-full animate-pulse ${
+              isSupportMode ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}
+          />
+          {isSupportMode
+            ? `🛠️ Suporte: ${supportTenant?.name || user?.tenantName}`
+            : user?.tenantName || 'Escola Matriz Zx-Escola'}
         </div>
 
         {/* Divider */}

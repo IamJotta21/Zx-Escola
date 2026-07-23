@@ -230,7 +230,7 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ allowedRoles }) => {
 };
 
 export const PublicRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user, isSupportMode } = useAuth();
 
   if (isLoading) {
     return (
@@ -241,6 +241,9 @@ export const PublicRoute: React.FC = () => {
   }
 
   if (isAuthenticated) {
+    if (user?.role === 'SUPER_ADMIN' && !isSupportMode) {
+      return <Navigate to="/super-admin" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -2964,11 +2967,11 @@ export const AppRoutes: React.FC = () => {
 
             <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
               <Route path="/super-admin" element={<SuperAdminPage />} />
+              <Route path="/escolas" element={<SchoolsPage />} />
+              <Route path="/planos" element={<PlansPage />} />
             </Route>
 
             <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'DIRETOR']} />}>
-              <Route path="/escolas" element={<SchoolsPage />} />
-              <Route path="/planos" element={<PlansPage />} />
               <Route path="/permissoes" element={<RolesPage />} />
             </Route>
 

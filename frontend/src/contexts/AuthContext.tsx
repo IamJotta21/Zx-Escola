@@ -19,9 +19,13 @@ interface AuthContextData {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isSupportMode: boolean;
+  supportTenant: { id: string; name: string } | null;
   signIn: (accessToken: string, refreshToken: string, user: User) => void;
   signOut: () => void;
   updateUser: (user: User) => void;
+  startSupportMode: (accessToken: string, tenant: { id: string; name: string }) => void;
+  exitSupportMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -29,6 +33,10 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [supportTenant, setSupportTenant] = useState<{ id: string; name: string } | null>(() => {
+    const saved = localStorage.getItem('@ZxEscola:supportTenant');
+    try { return saved ? JSON.parse(saved) : null; } catch { return null; }
+  });
 
   const signOut = () => {
     const refreshToken = localStorage.getItem('@ZxEscola:refreshToken');
@@ -38,7 +46,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('@ZxEscola:accessToken');
     localStorage.removeItem('@ZxEscola:refreshToken');
     localStorage.removeItem('@ZxEscola:user');
+    localStorage.removeItem('@ZxEscola:superAdminMasterToken');
+    localStorage.removeItem('@ZxEscola:superAdminMasterUser');
+    localStorage.removeItem('@ZxEscola:supportTenant');
+    setSupportTenant(null);
     setUser(null);
+  };
+
+  const startSupportMode = (accessToken: string, tenant: { id: string; name: string }) => {
+    const currentToken = localStorage.getItem('@ZxEscola:accessToken') || '';
+    const currentUser = localStorage.getItem('@ZxEscola:user') || '';
+
+    // Guard original Super Admin session if not already in support mode
+    if (!localStorage.getItem('@ZxEscola:superAdminMasterToken')) {
+      localStorage.setItem('@ZxEscola:superAdminMasterToken', currentToken);
+      localStorage.setItem('@ZxEscola:superAdminMasterUser', currentUser);
+    }
+
+    localStorage.setItem('@ZxEscola:supportTenant', JSON.stringify(tenant));
+    localStorage.setItem('@ZxEscola:accessToken', accessToken);
+
+    setSupportTenant(tenant);
+
+    if (user) {
+      const updatedUser: User = {
+        ...user,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('@ZxEscola:user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const exitSupportMode = () => {
+    const masterToken = localStorage.getItem('@ZxEscola:superAdminMasterToken');
+    const masterUser = localStorage.getItem('@ZxEscola:superAdminMasterUser');
+
+    if (masterToken) {
+      localStorage.setItem('@ZxEscola:accessToken', masterToken);
+    }
+    if (masterUser) {
+      localStorage.setItem('@ZxEscola:user', masterUser);
+      try { setUser(JSON.parse(masterUser)); } catch { /* silent */ }
+    }
+
+    localStorage.removeItem('@ZxEscola:superAdminMasterToken');
+    localStorage.removeItem('@ZxEscola:superAdminMasterUser');
+    localStorage.removeItem('@ZxEscola:supportTenant');
+
+    setSupportTenant(null);
+    window.location.href = '/super-admin';
   };
 
   useEffect(() => {
@@ -121,15 +179,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(updatedUser);
   };
 
+  const isSupportMode = !!supportTenant || !!localStorage.getItem('@ZxEscola:superAdminMasterToken');
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: !!user,
         isLoading,
+        isSupportMode,
+        supportTenant,
         signIn,
         signOut,
         updateUser,
+        startSupportMode,
+        exitSupportMode,
       }}
     >
       {children}

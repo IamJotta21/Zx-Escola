@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ShieldAlert,
   Building2,
@@ -61,8 +62,9 @@ interface SuperAdminCharts {
 }
 
 export const SuperAdminPage: React.FC = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
-  const { signIn } = useAuth();
+  const { startSupportMode } = useAuth();
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'schools' | 'notifications' | 'monitoring' | 'audit'
   >('dashboard');
@@ -200,12 +202,12 @@ export const SuperAdminPage: React.FC = () => {
       const { accessToken, tenant } = res.data.data;
       addToast({
         type: 'success',
-        message: `Sessão de suporte iniciada na escola ${tenant.name}.`,
+        message: `Sessão de suporte técnico iniciada na escola ${tenant.name}.`,
       });
 
-      // Switch context and redirect
-      localStorage.setItem('@ZxEscola:accessToken', accessToken);
-      window.location.href = '/dashboard';
+      // Switch context and redirect to school dashboard
+      startSupportMode(accessToken, tenant);
+      navigate('/dashboard');
     } catch {
       addToast({ type: 'error', message: 'Erro ao iniciar sessão de suporte técnico.' });
     } finally {

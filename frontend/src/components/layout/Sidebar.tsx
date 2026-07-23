@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       name: 'Painel Super Admin',
       path: '/super-admin',
       icon: ShieldAlert,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+      roles: ['SUPER_ADMIN'],
     },
     {
       name: 'Dashboard',
@@ -76,13 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       name: 'Escolas',
       path: '/escolas',
       icon: Building2,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+      roles: ['SUPER_ADMIN'],
     },
     {
       name: 'Planos & Assinaturas',
       path: '/planos',
       icon: CreditCard,
-      roles: ['SUPER_ADMIN', 'ADMIN', 'DIRETOR'],
+      roles: ['SUPER_ADMIN'],
     },
     {
       name: 'Permissões RBAC',

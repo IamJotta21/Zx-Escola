@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   Plus,
@@ -12,6 +13,7 @@ import {
   Phone,
   Mail,
   ShieldCheck,
+  ShieldAlert,
   Palette,
   BookOpen,
   DollarSign,
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -96,9 +99,29 @@ export interface TenantItem {
 }
 
 export const SchoolsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
+  const { startSupportMode } = useAuth();
   const [tenants, setTenants] = useState<TenantItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const handleStartSupportMode = async (tenant: TenantItem) => {
+    try {
+      const res = await api.post('/superadmin/impersonate', {
+        tenantId: tenant.id,
+        reason: `Acesso de suporte técnico global à escola ${tenant.name}`,
+      });
+      const { accessToken } = res.data.data;
+      addToast({
+        type: 'success',
+        message: `Sessão de suporte técnico iniciada em ${tenant.name}.`,
+      });
+      startSupportMode(accessToken, { id: tenant.id, name: tenant.name });
+      navigate('/dashboard');
+    } catch {
+      addToast({ type: 'error', message: 'Erro ao acessar escola em modo de suporte.' });
+    }
+  };
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -492,6 +515,16 @@ export const SchoolsPage: React.FC = () => {
                         title="Ver detalhes"
                       >
                         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 text-xs font-bold gap-1"
+                        onClick={() => handleStartSupportMode(item)}
+                        title="Acessar painel desta escola para suporte técnico"
+                      >
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        Suporte
                       </Button>
                       <Button
                         variant="ghost"
