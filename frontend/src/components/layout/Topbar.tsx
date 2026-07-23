@@ -28,10 +28,33 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   // Notification / Announcements popover states
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [userNotifications, setUserNotifications] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [notifTab, setNotifTab] = useState<'notifications' | 'announcements'>('notifications');
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifData = async () => {
+    setLoadingNotifs(true);
+    try {
+      const [notifRes, annRes] = await Promise.allSettled([
+        api.get('/communication/notifications?limit=20'),
+        api.get('/communication/announcements?limit=10'),
+      ]);
+      if (notifRes.status === 'fulfilled') {
+        setUserNotifications(notifRes.value.data?.data?.notifications || notifRes.value.data?.data || []);
+      }
+      if (annRes.status === 'fulfilled') {
+        setAnnouncements(annRes.value.data?.data?.announcements || annRes.value.data?.data || []);
+      }
+    } catch {
+      /* silent – backend may be offline */
+    } finally {
+      setLoadingNotifs(false);
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
