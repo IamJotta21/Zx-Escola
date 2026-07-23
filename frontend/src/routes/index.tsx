@@ -297,29 +297,63 @@ const LoginPage: React.FC = () => {
       const status = axiosError.response?.status;
 
       if (status === 401 || status === 400) {
+        // Credenciais realmente inválidas — backend confirmou
         addToast({
           type: 'error',
           title: 'Credenciais inválidas',
           message: 'E-mail ou senha incorretos. Verifique e tente novamente.',
         });
-      } else if (!axiosError.response) {
-        // Network error: servidor inacessível
-        addToast({
-          type: 'error',
-          title: 'Servidor inacessível',
-          message: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
-        });
       } else {
-        addToast({
-          type: 'error',
-          title: 'Erro ao entrar',
-          message: axiosError.response?.data?.message || 'Ocorreu um erro inesperado.',
-        });
+        // Servidor indisponível, erro de rede ou backend não deployado:
+        // Ativar modo demo offline com roles corretas por conta
+        const DEMO_ACCOUNTS: Record<string, { role: UserRole; firstName: string; lastName: string }> = {
+          'superadmin@zxescola.com.br': { role: 'SUPER_ADMIN', firstName: 'Super',    lastName: 'Administrador' },
+          'admin@escola.com':           { role: 'ADMIN',       firstName: 'Carlos',   lastName: 'Eduardo' },
+          'diretor@escola.com':         { role: 'DIRETOR',     firstName: 'Marielle', lastName: 'Silva' },
+          'secretaria@escola.com':      { role: 'STAFF',       firstName: 'Flavia',   lastName: 'Lima' },
+          'professor@escola.com':       { role: 'TEACHER',     firstName: 'Roberto',  lastName: 'Abreu' },
+          'financeiro@escola.com':      { role: 'FINANCEIRO',  firstName: 'Marcos',   lastName: 'Souza' },
+          'pais@escola.com':            { role: 'GUARDIAN',    firstName: 'Pedro',    lastName: 'Santos' },
+          'pai@escola.com':             { role: 'GUARDIAN',    firstName: 'Pedro',    lastName: 'Santos' },
+          'aluno@escola.com':           { role: 'STUDENT',     firstName: 'Lucas',    lastName: 'Santos' },
+        };
+
+        const emailKey = email.toLowerCase().trim();
+        const demoAccount = DEMO_ACCOUNTS[emailKey];
+
+        if (demoAccount && password === '123456') {
+          const demoUser: User = {
+            id: `demo-${emailKey}`,
+            email: emailKey,
+            role: demoAccount.role,
+            firstName: demoAccount.firstName,
+            lastName: demoAccount.lastName,
+          };
+          signIn(`demo-token-${emailKey}`, `demo-refresh-${emailKey}`, demoUser);
+          addToast({
+            type: 'success',
+            title: 'Modo Demonstração',
+            message: `Bem-vindo, ${demoAccount.firstName}! (backend offline — sessão demo)`,
+          });
+        } else if (demoAccount && password !== '123456') {
+          addToast({
+            type: 'error',
+            title: 'Senha incorreta',
+            message: 'No modo demonstração, a senha de todas as contas é: 123456',
+          });
+        } else {
+          addToast({
+            type: 'error',
+            title: 'Conta não encontrada',
+            message: 'E-mail não reconhecido. Use uma das contas de demonstração abaixo.',
+          });
+        }
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-6">

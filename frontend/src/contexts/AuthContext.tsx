@@ -50,7 +50,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const isLocalDemoToken =
         storedToken === 'superadmin-access-token' ||
         storedToken === 'superadmin-refresh-token' ||
-        storedToken === 'demo-token';
+        storedToken === 'demo-token' ||
+        (storedToken?.startsWith('demo-token-') ?? false);
 
       if (storedToken) {
         try {
@@ -92,7 +93,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Listen to global 401 logout events from Axios (skip for demo sessions)
     const handleUnauthorized = () => {
       const token = localStorage.getItem('@ZxEscola:accessToken');
-      if (token === 'superadmin-access-token' || token === 'demo-token') return;
+      // Não deslogar sessões demo offline
+      if (
+        token === 'superadmin-access-token' ||
+        token === 'demo-token' ||
+        (token?.startsWith('demo-token-') ?? false)
+      ) return;
       signOut();
     };
 
