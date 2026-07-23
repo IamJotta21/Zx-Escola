@@ -6,6 +6,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { ImportProvider } from '../contexts/ImportContext';
 import { AxiosError } from 'axios';
 
+import { Logo } from '../components/common/Logo';
+
 // UI components imports
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -317,9 +319,7 @@ const LoginPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-extrabold text-2xl shadow-md mb-2">
-          Z
-        </div>
+        <Logo size="lg" className="justify-center mb-2" />
         <h2 className="text-2xl font-extrabold font-sans tracking-tight text-foreground">
           Acessar Zx-Escola
         </h2>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { Logo } from '../common/Logo';
 import {
   LayoutDashboard,
   Users,
@@ -206,14 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Brand Header */}
       <div>
         <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : 'px-2'} py-2`}>
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-extrabold text-lg shadow-sm shrink-0">
-            Z
-          </div>
-          {!isCollapsed && (
-            <span className="font-sans font-extrabold text-lg tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Zx-Escola
-            </span>
-          )}
+          <Logo size="md" showText={!isCollapsed} />
         </div>
 
         {/* Navigation Items */}
