@@ -56,9 +56,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
           if (storedUser) {
             const parsed = JSON.parse(storedUser);
-            if (parsed.email === 'diretor@escola.com' || parsed.email?.includes('superadmin') || parsed.role === 'DIRETOR') {
-              parsed.role = 'SUPER_ADMIN';
-            }
             setUser(parsed);
           }
 
@@ -66,14 +63,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (!isLocalDemoToken) {
             const response = await api.get('/auth/profile');
             const userProfile = response.data.data;
-            const assignedRole = (userProfile.email === 'diretor@escola.com' || userProfile.email?.includes('superadmin') || userProfile.role === 'DIRETOR')
-              ? 'SUPER_ADMIN'
-              : userProfile.role;
 
             const userData: User = {
               id: userProfile.id,
               email: userProfile.email,
-              role: assignedRole,
+              role: userProfile.role,
               firstName: userProfile.profile?.firstName || '',
               lastName: userProfile.profile?.lastName || '',
               avatarUrl: userProfile.profile?.avatarUrl || undefined,
@@ -110,9 +104,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = (accessToken: string, refreshToken: string, userData: User) => {
-    if (userData.email === 'diretor@escola.com' || userData.email?.includes('superadmin') || userData.role === 'DIRETOR') {
-      userData.role = 'SUPER_ADMIN';
-    }
     localStorage.setItem('@ZxEscola:accessToken', accessToken);
     localStorage.setItem('@ZxEscola:refreshToken', refreshToken);
     localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));

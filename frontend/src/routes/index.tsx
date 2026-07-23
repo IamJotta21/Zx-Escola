@@ -286,10 +286,6 @@ const LoginPage: React.FC = () => {
       const response = await api.post('/auth/login', { email, password });
       const { accessToken, refreshToken, user } = response.data.data;
 
-      if (user && (user.email === 'diretor@escola.com' || user.email.includes('superadmin'))) {
-        user.role = 'SUPER_ADMIN';
-      }
-
       signIn(accessToken, refreshToken, user);
       addToast({
         type: 'success',
@@ -297,20 +293,29 @@ const LoginPage: React.FC = () => {
         message: `Login realizado como ${user.firstName}.`,
       });
     } catch (error) {
-      // Fallback for standalone frontend or network error: Instant Super Admin login
-      const superUser: User = {
-        id: 'superadmin-id',
-        email: email || 'superadmin@zxescola.com.br',
-        role: 'SUPER_ADMIN',
-        firstName: 'Super',
-        lastName: 'Administrador SaaS',
-      };
-      signIn('superadmin-access-token', 'superadmin-refresh-token', superUser);
-      addToast({
-        type: 'success',
-        title: 'Bem-vindo de volta!',
-        message: 'Sessão de Super Administrador iniciada.',
-      });
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const status = axiosError.response?.status;
+
+      if (status === 401 || status === 400) {
+        addToast({
+          type: 'error',
+          title: 'Credenciais inválidas',
+          message: 'E-mail ou senha incorretos. Verifique e tente novamente.',
+        });
+      } else if (!axiosError.response) {
+        // Network error: servidor inacessível
+        addToast({
+          type: 'error',
+          title: 'Servidor inacessível',
+          message: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Erro ao entrar',
+          message: axiosError.response?.data?.message || 'Ocorreu um erro inesperado.',
+        });
+      }
     } finally {
       setLoading(false);
     }

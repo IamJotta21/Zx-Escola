@@ -80,31 +80,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(401).json({ status: 'error', message: 'Credenciais inválidas' });
     }
 
-    // For SUPER_ADMIN role or superadmin email, accept the password and sync the hash if needed
-    if (user.role === 'SUPER_ADMIN' || user.email.toLowerCase().includes('superadmin')) {
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      if (!passwordMatch) {
-        const newHash = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { password: newHash },
-        });
-      }
-    } else {
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      if (!passwordMatch) {
-        return res.status(401).json({ status: 'error', message: 'Credenciais inválidas' });
-      }
+    // Verify password for all users
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ status: 'error', message: 'Credenciais inválidas' });
     }
-
-    const userRole = (user.email === 'diretor@escola.com' || user.role === 'SUPER_ADMIN')
-      ? 'SUPER_ADMIN'
-      : (user.role as Role);
 
     const payload = {
       id: user.id,
       email: user.email,
-      role: userRole as Role,
+      role: user.role as Role,
       tenantId: user.tenantId || 'escola-matriz-default-id',
     };
 
