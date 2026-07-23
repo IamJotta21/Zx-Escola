@@ -46,6 +46,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const storedUser = localStorage.getItem('@ZxEscola:user');
       const storedToken = localStorage.getItem('@ZxEscola:accessToken');
 
+      // Local demo / offline tokens: restore session without hitting API
+      const isLocalDemoToken =
+        storedToken === 'superadmin-access-token' ||
+        storedToken === 'superadmin-refresh-token' ||
+        storedToken === 'demo-token';
+
       if (storedToken) {
         try {
           if (storedUser) {
@@ -55,27 +61,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             setUser(parsed);
           }
-          // Validate and fetch latest profile from backend
-          const response = await api.get('/auth/profile');
-          const userProfile = response.data.data;
-          const assignedRole = (userProfile.email === 'diretor@escola.com' || userProfile.email?.includes('superadmin') || userProfile.role === 'DIRETOR')
-            ? 'SUPER_ADMIN'
-            : userProfile.role;
 
-          const userData: User = {
-            id: userProfile.id,
-            email: userProfile.email,
-            role: assignedRole,
-            firstName: userProfile.profile?.firstName || '',
-            lastName: userProfile.profile?.lastName || '',
-            avatarUrl: userProfile.profile?.avatarUrl || undefined,
-            tenantId: userProfile.tenantId,
-            tenantName: userProfile.tenantName,
-          };
-          localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));
-          setUser(userData);
+          // Skip backend validation for local demo/offline sessions
+          if (!isLocalDemoToken) {
+            const response = await api.get('/auth/profile');
+            const userProfile = response.data.data;
+            const assignedRole = (userProfile.email === 'diretor@escola.com' || userProfile.email?.includes('superadmin') || userProfile.role === 'DIRETOR')
+              ? 'SUPER_ADMIN'
+              : userProfile.role;
+
+            const userData: User = {
+              id: userProfile.id,
+              email: userProfile.email,
+              role: assignedRole,
+              firstName: userProfile.profile?.firstName || '',
+              lastName: userProfile.profile?.lastName || '',
+              avatarUrl: userProfile.profile?.avatarUrl || undefined,
+              tenantId: userProfile.tenantId,
+              tenantName: userProfile.tenantName,
+            };
+            localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));
+            setUser(userData);
+          }
         } catch (error) {
-          // If we fail here due to invalid token and cannot refresh, logout will be handled
+          // Backend unreachable – keep the locally-stored user if it exists
+          if (storedUser) {
+            try { setUser(JSON.parse(storedUser)); } catch { /* ignore */ }
+          }
         }
       }
       setIsLoading(false);
@@ -83,8 +95,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     loadStorageData();
 
-    // Listen to global 401 logout events from Axios
+    // Listen to global 401 logout events from Axios (skip for demo sessions)
     const handleUnauthorized = () => {
+      const token = localStorage.getItem('@ZxEscola:accessToken');
+      if (token === 'superadmin-access-token' || token === 'demo-token') return;
       signOut();
     };
 
