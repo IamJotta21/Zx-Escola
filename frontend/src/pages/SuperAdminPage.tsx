@@ -116,8 +116,23 @@ export const SuperAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/superadmin/dashboard');
-      setSummary(res.data.data?.summary || null);
-      setCharts(res.data.data?.charts || null);
+      setSummary(res.data.data?.summary || {
+        totalTenants: 0,
+        activeTenants: 0,
+        suspendedTenants: 0,
+        totalUsers: 0,
+        totalStudents: 0,
+        totalTeachers: 0,
+        monthlyRevenue: 0,
+        totalRevenue: 0,
+        activePlans: { BASIC: 0, PRO: 0, ENTERPRISE: 0 },
+      });
+      setCharts(res.data.data?.charts || {
+        schoolsGrowth: [],
+        studentsGrowth: [],
+        usersGrowth: [],
+        revenueGrowth: [],
+      });
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar métricas globais do SaaS.' });
     } finally {

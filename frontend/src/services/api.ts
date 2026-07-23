@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getMockResponse } from './mockData';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -7,6 +8,36 @@ const api = axios.create({
   },
   withCredentials: true, // Necessary if refresh tokens are stored in HttpOnly cookies
 });
+
+// Configure custom adapter to intercept calls during offline/demo sessions
+const defaultAdapter = api.defaults.adapter || axios.defaults.adapter;
+api.defaults.adapter = async (config) => {
+  const currentToken = localStorage.getItem('@ZxEscola:accessToken');
+  const isDemoSession =
+    currentToken === 'superadmin-access-token' ||
+    currentToken === 'demo-token' ||
+    (currentToken?.startsWith('demo-token-') ?? false);
+
+  if (isDemoSession) {
+    // Return simulated mock response immediately
+    const mockData = getMockResponse(config.url || '', config.method || 'get', config.params, config.data);
+    return {
+      data: mockData,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+      request: {},
+    };
+  }
+
+  // Fallback to real HTTP request
+  if (defaultAdapter) {
+    return defaultAdapter(config);
+  }
+  
+  throw new Error('No default adapter found');
+};
 
 // Request Interceptor: Attach Access Token
 api.interceptors.request.use(

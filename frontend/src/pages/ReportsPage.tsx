@@ -85,12 +85,38 @@ interface ReportsPayload {
   teachers: TeacherStat[];
 }
 
+const DEFAULT_REPORTS_DATA: ReportsPayload = {
+  financial: {
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netResult: 0,
+    defaultRate: 0,
+    monthlyCashflow: [],
+  },
+  tuitions: {
+    totalExpected: 0,
+    totalCollected: 0,
+    totalPending: 0,
+    totalOverdue: 0,
+    collectionRate: 0,
+  },
+  academic: {
+    avgGrade: 0,
+    passRate: 0,
+    attendanceRate: 0,
+    gradesBySubject: [],
+  },
+  classes: [],
+  students: { total: 0, byStatus: {}, byGender: {} },
+  teachers: [],
+};
+
 export const ReportsPage: React.FC = () => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<
     'financial' | 'academic' | 'students_teachers' | 'logs'
   >('financial');
-  const [data, setData] = useState<ReportsPayload | null>(null);
+  const [data, setData] = useState<ReportsPayload>(DEFAULT_REPORTS_DATA);
   const [isLoading, setIsLoading] = useState(false);
 
   // System logs state
@@ -106,13 +132,25 @@ export const ReportsPage: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await api.get('/reports');
-      setData(res.data.data);
+      // Merge received data with defaults to guarantee all fields exist
+      const received = res.data.data || {};
+      setData({
+        ...DEFAULT_REPORTS_DATA,
+        ...received,
+        financial: { ...DEFAULT_REPORTS_DATA.financial, ...(received.financial || {}) },
+        academic:  { ...DEFAULT_REPORTS_DATA.academic,  ...(received.academic  || {}) },
+        tuitions:  { ...DEFAULT_REPORTS_DATA.tuitions,  ...(received.tuitions  || {}) },
+        students:  { ...DEFAULT_REPORTS_DATA.students,  ...(received.students  || {}) },
+        classes:   received.classes  || [],
+        teachers:  received.teachers || [],
+      });
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar dados consolidados de relatórios.' });
     } finally {
       setIsLoading(false);
     }
   }, [addToast]);
+
 
   const fetchLogs = useCallback(
     async (page: number, searchKeyword = '') => {

@@ -184,8 +184,20 @@ export const FinancialPage: React.FC = () => {
   const fetchSummary = useCallback(async () => {
     try {
       const res = await api.get('/financial/summary');
-      const data = res.data.data || {};
-      setSummary(data.summary || null);
+      setSummary(data.summary || {
+        totalRevenues: 0,
+        totalExpenses: 0,
+        balance: 0,
+        monthRevenue: 0,
+        defaultRate: 0,
+        paidCount: 0,
+        paidSum: 0,
+        pendingCount: 0,
+        pendingSum: 0,
+        overdueCount: 0,
+        overdueSum: 0,
+        totalTuitionsCount: 0,
+      });
       setOverdueList(data.overdueList || []);
       setPaidList(data.paidList || []);
       setPendingList(data.pendingList || []);
