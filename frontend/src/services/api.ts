@@ -45,7 +45,14 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (!error.response || error.response.status !== 401 || originalRequest._retry) {
+    // Não tentar refresh em sessões demo offline
+    const currentToken = localStorage.getItem('@ZxEscola:accessToken');
+    const isDemoSession =
+      currentToken === 'superadmin-access-token' ||
+      currentToken === 'demo-token' ||
+      (currentToken?.startsWith('demo-token-') ?? false);
+
+    if (!error.response || error.response.status !== 401 || originalRequest._retry || isDemoSession) {
       return Promise.reject(error);
     }
 

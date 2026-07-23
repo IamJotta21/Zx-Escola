@@ -1935,8 +1935,8 @@ const StudentsPage: React.FC = () => {
         if (stateFilter) params.state = stateFilter;
 
         const res = await api.get('/students', { params });
-        setStudents(res.data.data.students);
-        setMeta(res.data.data.meta);
+        setStudents(res.data.data?.students || []);
+        setMeta(res.data.data?.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
       } catch {
         addToast({ type: 'error', message: 'Falha ao carregar alunos.' });
       } finally {

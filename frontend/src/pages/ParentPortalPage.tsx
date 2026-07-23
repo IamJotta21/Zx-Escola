@@ -161,7 +161,7 @@ export const ParentPortalPage: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await api.get('/portal/guardian/children');
-      const data: Child[] = res.data.data;
+      const data: Child[] = res.data.data || [];
       setChildren(data);
       if (data.length > 0) {
         setSelectedChildId(data[0].id);

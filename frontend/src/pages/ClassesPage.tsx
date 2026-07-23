@@ -119,7 +119,7 @@ export const ClassesPage: React.FC = () => {
   const fetchClasses = useCallback(async () => {
     try {
       const res = await api.get('/classes');
-      setClasses(res.data.data);
+      setClasses(res.data.data || []);
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar turmas.' });
     }
@@ -128,7 +128,7 @@ export const ClassesPage: React.FC = () => {
   const fetchRooms = useCallback(async () => {
     try {
       const res = await api.get('/rooms');
-      setRooms(res.data.data);
+      setRooms(res.data.data || []);
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar salas.' });
     }
@@ -137,7 +137,7 @@ export const ClassesPage: React.FC = () => {
   const fetchTeachers = useCallback(async () => {
     try {
       const res = await api.get('/teachers', { params: { limit: '100' } });
-      setTeachers(res.data.data.teachers);
+      setTeachers(res.data.data?.teachers || []);
     } catch {
       // Fail silently
     }
@@ -146,7 +146,7 @@ export const ClassesPage: React.FC = () => {
   const fetchAllStudents = useCallback(async () => {
     try {
       const res = await api.get('/students', { params: { limit: '200' } });
-      setStudents(res.data.data.students);
+      setStudents(res.data.data?.students || []);
     } catch {
       // Fail silently
     }

@@ -255,7 +255,7 @@ export const TeacherPortalPage: React.FC = () => {
     if (!selectedClassId) return;
     try {
       const res = await api.get('/academic/contents', { params: { classId: selectedClassId } });
-      setContentList(res.data.data);
+      setContentList(res.data.data || []);
     } catch {
       // Silent error
     }
@@ -269,7 +269,7 @@ export const TeacherPortalPage: React.FC = () => {
         params: { classId: selectedClassId, date: attendanceDate },
       });
 
-      const records = res.data.data;
+      const records = res.data.data || [];
       const currentClass = classes.find((c) => c.id === selectedClassId);
 
       const tempRecords: Record<string, 'PRESENTE' | 'FALTA' | 'JUSTIFICADA' | 'ATRASO'> = {};
@@ -299,7 +299,7 @@ export const TeacherPortalPage: React.FC = () => {
     if (!selectedClassId) return;
     try {
       const res = await api.get('/academic/report-cards', { params: { classId: selectedClassId } });
-      const cards: ReportCardItem[] = res.data.data;
+      const cards: ReportCardItem[] = res.data.data || [];
 
       // Populate localized grades input inputs
       const currentClass = classes.find((c) => c.id === selectedClassId);

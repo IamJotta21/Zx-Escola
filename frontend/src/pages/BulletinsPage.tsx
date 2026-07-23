@@ -115,7 +115,7 @@ export const BulletinsPage: React.FC = () => {
           user: { email: string };
           students: StudentRelation[];
         }
-        const list = res.data.data.guardians;
+        const list = res.data.data?.guardians || [];
         const currentG = (list as GuardianItem[]).find((g) => g.user?.email === user.email);
 
         if (currentG && currentG.students) {
@@ -131,7 +131,7 @@ export const BulletinsPage: React.FC = () => {
         // Load classes first
         const endpoint = user.role === 'TEACHER' ? '/portal/teacher/classes' : '/classes';
         const res = await api.get(endpoint);
-        const classesData = res.data.data;
+        const classesData = res.data.data || [];
         setClassesList(classesData);
 
         if (classesData.length > 0) {

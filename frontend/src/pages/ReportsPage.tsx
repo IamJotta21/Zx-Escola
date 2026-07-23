@@ -125,8 +125,8 @@ export const ReportsPage: React.FC = () => {
             search: searchKeyword || undefined,
           },
         });
-        setLogs(res.data.data.logs);
-        setLogsTotal(res.data.data.total);
+        setLogs(res.data.data?.logs || []);
+        setLogsTotal(res.data.data?.total || 0);
       } catch {
         addToast({ type: 'error', message: 'Erro ao carregar trilha de auditoria.' });
       } finally {

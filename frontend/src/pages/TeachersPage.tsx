@@ -103,8 +103,8 @@ export const TeachersPage: React.FC = () => {
         if (search) params.search = search;
 
         const res = await api.get('/teachers', { params });
-        setTeachers(res.data.data.teachers);
-        setMeta(res.data.data.meta);
+        setTeachers(res.data.data?.teachers || []);
+        setMeta(res.data.data?.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
       } catch {
         addToast({ type: 'error', message: 'Erro ao carregar professores.' });
       } finally {

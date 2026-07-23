@@ -141,7 +141,7 @@ export const AcademicProcessesPage: React.FC = () => {
       const res = await api.get('/students', { params });
 
       // Filter manually on frontend if API list doesn't fully support multiple status filters or raw enums
-      let filtered = res.data.data.students as StudentShort[];
+      let filtered = (res.data.data?.students || []) as StudentShort[];
       if (activeTab === 'espera') {
         filtered = filtered.filter((s) => s.status === 'LISTA_DE_ESPERA');
       } else if (activeTab === 'rematricula') {
@@ -173,8 +173,8 @@ export const AcademicProcessesPage: React.FC = () => {
       setLoadingLogs(true);
       try {
         const res = await api.get('/enrollments', { params: { page: String(page), limit: '10' } });
-        setLogs(res.data.data.enrollments);
-        setMeta(res.data.data.meta);
+        setLogs(res.data.data?.enrollments || []);
+        setMeta(res.data.data?.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
       } catch {
         addToast({ type: 'error', message: 'Erro ao carregar histórico de matrículas.' });
       } finally {

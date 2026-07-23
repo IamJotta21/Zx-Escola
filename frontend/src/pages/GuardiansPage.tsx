@@ -128,8 +128,8 @@ export const GuardiansPage: React.FC = () => {
         if (finFilter) params.isFinancial = finFilter;
 
         const res = await api.get('/guardians', { params });
-        setGuardians(res.data.data.guardians);
-        setMeta(res.data.data.meta);
+        setGuardians(res.data.data?.guardians || []);
+        setMeta(res.data.data?.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
       } catch {
         addToast({ type: 'error', message: 'Falha ao carregar responsáveis.' });
       } finally {
@@ -143,7 +143,7 @@ export const GuardiansPage: React.FC = () => {
   const fetchAllStudents = useCallback(async () => {
     try {
       const res = await api.get('/students', { params: { limit: '100' } });
-      setAllStudents(res.data.data.students);
+      setAllStudents(res.data.data?.students || []);
     } catch {
       // Fail silently
     }

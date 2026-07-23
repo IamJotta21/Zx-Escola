@@ -99,7 +99,7 @@ export const CommunicationPage: React.FC = () => {
   const fetchClasses = useCallback(async () => {
     try {
       const res = await api.get('/classes');
-      setClasses(res.data.data);
+      setClasses(res.data.data || []);
     } catch {
       // Fail silently
     }
@@ -108,7 +108,7 @@ export const CommunicationPage: React.FC = () => {
   const fetchAnnouncements = useCallback(async () => {
     try {
       const res = await api.get('/communication/announcements');
-      setAnnouncements(res.data.data);
+      setAnnouncements(res.data.data || []);
     } catch {
       // Fail silently
     }

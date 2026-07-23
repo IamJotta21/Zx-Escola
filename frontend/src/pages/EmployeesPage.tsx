@@ -102,8 +102,8 @@ export const EmployeesPage: React.FC = () => {
         if (search) params.search = search;
 
         const res = await api.get('/employees', { params });
-        setEmployees(res.data.data.employees);
-        setMeta(res.data.data.meta);
+        setEmployees(res.data.data?.employees || []);
+        setMeta(res.data.data?.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
       } catch {
         addToast({ type: 'error', message: 'Erro ao carregar funcionários.' });
       } finally {

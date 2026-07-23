@@ -184,8 +184,8 @@ export const FinancialPage: React.FC = () => {
   const fetchSummary = useCallback(async () => {
     try {
       const res = await api.get('/financial/summary');
-      const data = res.data.data;
-      setSummary(data.summary);
+      const data = res.data.data || {};
+      setSummary(data.summary || null);
       setOverdueList(data.overdueList || []);
       setPaidList(data.paidList || []);
       setPendingList(data.pendingList || []);

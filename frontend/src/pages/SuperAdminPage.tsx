@@ -116,8 +116,8 @@ export const SuperAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/superadmin/dashboard');
-      setSummary(res.data.data.summary);
-      setCharts(res.data.data.charts);
+      setSummary(res.data.data?.summary || null);
+      setCharts(res.data.data?.charts || null);
     } catch {
       addToast({ type: 'error', message: 'Erro ao carregar métricas globais do SaaS.' });
     } finally {
@@ -137,7 +137,7 @@ export const SuperAdminPage: React.FC = () => {
   const fetchMonitoring = useCallback(async () => {
     try {
       const res = await api.get('/superadmin/monitoring');
-      setMonitoring(res.data.data);
+      setMonitoring(res.data.data || null);
     } catch {
       /* silent */
     }

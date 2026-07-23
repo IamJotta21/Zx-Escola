@@ -144,7 +144,7 @@ export const LibraryPage: React.FC = () => {
   const fetchSummary = useCallback(async () => {
     try {
       const r = await api.get('/library/summary');
-      setSummary(r.data.data);
+      setSummary(r.data.data || null);
     } catch {
       /* silent */
     }
@@ -152,7 +152,7 @@ export const LibraryPage: React.FC = () => {
   const fetchCategories = useCallback(async () => {
     try {
       const r = await api.get('/library/categories');
-      setCategories(r.data.data);
+      setCategories(r.data.data || []);
     } catch {
       /* silent */
     }
@@ -162,7 +162,7 @@ export const LibraryPage: React.FC = () => {
       const params: Record<string, string> = {};
       if (searchTerm) params.search = searchTerm;
       const r = await api.get('/library/books', { params });
-      setBooks(r.data.data);
+      setBooks(r.data.data || []);
     } catch {
       /* silent */
     }
@@ -172,7 +172,7 @@ export const LibraryPage: React.FC = () => {
       const params: Record<string, string> = {};
       if (loanStatusFilter) params.status = loanStatusFilter;
       const r = await api.get('/library/loans', { params });
-      setLoans(r.data.data);
+      setLoans(r.data.data || []);
     } catch {
       /* silent */
     }
@@ -180,7 +180,7 @@ export const LibraryPage: React.FC = () => {
   const fetchReservations = useCallback(async () => {
     try {
       const r = await api.get('/library/reservations');
-      setReservations(r.data.data);
+      setReservations(r.data.data || []);
     } catch {
       /* silent */
     }
