@@ -109,9 +109,9 @@ export const DocumentsPage: React.FC = () => {
       if (filterStatus) params.status = filterStatus;
       if (searchTerm) params.search = searchTerm;
       const r = await api.get('/schooldocs', { params });
-      setDocs(r.data.data);
+      setDocs(Array.isArray(r.data?.data) ? r.data.data : []);
     } catch {
-      /* silent */
+      setDocs([]);
     }
   }, [filterType, filterStatus, searchTerm]);
 
@@ -350,7 +350,7 @@ export const DocumentsPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {docs.length === 0 ? (
+                {(docs || []).length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={8}
@@ -360,7 +360,7 @@ export const DocumentsPage: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  docs.map((d) => (
+                  (docs || []).map((d) => (
                     <TableRow key={d.id} className="group">
                       <TableCell>
                         <Badge variant="outline" className="text-[10px]">

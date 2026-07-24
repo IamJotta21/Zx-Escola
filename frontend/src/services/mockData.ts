@@ -804,6 +804,39 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
     };
   }
 
+  // 17. DIGITAL SECRETARY (schooldocs)
+  if (cleanUrl === '/schooldocs') {
+    return {
+      status: 'success',
+      data: [
+        {
+          id: 'doc-1',
+          type: 'DECLARACAO',
+          title: 'Declaração de Matrícula - Lucas Santos',
+          content: 'DECLARAÇÃO DE MATRÍCULA\n\nDeclaramos para os devidos fins que o(a) aluno(a) Lucas Santos está regularmente matriculado(a) nesta instituição de ensino no ano letivo de 2026...',
+          studentId: 'student-1',
+          studentName: 'Lucas Santos',
+          issuedBy: 'diretor@zxescola.com.br',
+          status: 'EMITIDO',
+          createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - 2 * 86400000).toISOString()
+        },
+        {
+          id: 'doc-2',
+          type: 'HISTORICO',
+          title: 'Histórico Escolar Parcial - Mariana Costa',
+          content: 'HISTÓRICO ESCOLAR\n\nAluno(a): Mariana Costa...',
+          studentId: 'student-2',
+          studentName: 'Mariana Costa',
+          issuedBy: 'diretor@zxescola.com.br',
+          status: 'RASCUNHO',
+          createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - 5 * 86400000).toISOString()
+        }
+      ]
+    };
+  }
+
   // 15. COMMUNICATION
   if (cleanUrl === '/communication/announcements') {
     return {
