@@ -144,7 +144,15 @@ export const LibraryPage: React.FC = () => {
   const fetchSummary = useCallback(async () => {
     try {
       const r = await api.get('/library/summary');
-      setSummary(r.data.data || null);
+      const s = r.data.data;
+      setSummary({
+        totalBooks: s?.totalBooks ?? 0,
+        activeLoans: s?.activeLoans ?? 0,
+        overdueCount: s?.overdueCount ?? s?.overdueLoans ?? 0,
+        pendingReservations: s?.pendingReservations ?? 0,
+        totalFinesCollected: s?.totalFinesCollected ?? 0,
+        overdueList: Array.isArray(s?.overdueList) ? s.overdueList : [],
+      });
     } catch {
       /* silent */
     }
@@ -493,7 +501,7 @@ export const LibraryPage: React.FC = () => {
             ))}
           </div>
 
-          {summary.overdueList.length > 0 && (
+          {(summary?.overdueList || []).length > 0 && (
             <Card className="stripe-card">
               <CardContent className="p-6">
                 <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">

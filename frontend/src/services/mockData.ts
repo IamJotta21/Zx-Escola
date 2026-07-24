@@ -747,8 +747,23 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       data: {
         totalBooks: 450,
         activeLoans: 12,
-        overdueLoans: 2,
-        pendingReservations: 3
+        overdueCount: 2,
+        pendingReservations: 3,
+        totalFinesCollected: 15.00,
+        overdueList: [
+          {
+            id: 'loan-overdue-1',
+            dueDate: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
+            borrowerName: 'Maria Silva (Aluna)',
+            book: { title: 'Dom Casmurro' }
+          },
+          {
+            id: 'loan-overdue-2',
+            dueDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+            borrowerName: 'João Santos (Aluno)',
+            book: { title: 'Memórias Póstumas de Brás Cubas' }
+          }
+        ]
       }
     };
   }
