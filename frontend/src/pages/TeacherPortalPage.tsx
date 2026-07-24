@@ -187,7 +187,11 @@ export const TeacherPortalPage: React.FC = () => {
 
       try {
         const res = await api.get('/portal/teacher/profile');
-        profileData = res.data.data;
+        let data = res.data.data;
+        if (data && !data.name) {
+          data.name = `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.email || 'Professor';
+        }
+        profileData = data;
         setProfile(profileData);
       } catch (e) {
         console.error('[TeacherPortal] Erro ao carregar perfil:', e);
@@ -626,7 +630,7 @@ export const TeacherPortalPage: React.FC = () => {
             <span className="text-xs font-bold text-primary tracking-widest uppercase">
               Portal do Docente
             </span>
-            <h1 className="text-2xl font-black">Olá, Prof. {profile.name}!</h1>
+            <h1 className="text-2xl font-black">Olá, Prof. {profile?.name || 'Docente'}!</h1>
             <p className="text-sm text-slate-300">
               Gerencie suas turmas, registre chamadas, lance notas bimestrais e adicione conteúdos
               programáticos.
@@ -658,13 +662,13 @@ export const TeacherPortalPage: React.FC = () => {
                 <CardContent className="p-6 text-center space-y-4">
                   <div className="relative inline-block">
                     <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold text-3xl border-4 border-primary/20 overflow-hidden">
-                      {profile.name.charAt(0)}
+                      {(profile?.name || 'P').charAt(0)}
                     </div>
                     <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-5 h-5 rounded-full border-4 border-background" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-foreground">{profile.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{profile.email}</p>
+                    <h3 className="font-extrabold text-foreground">{profile?.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{profile?.email}</p>
                   </div>
 
                   <div className="pt-4 border-t border-border flex justify-around text-center">
@@ -1570,8 +1574,8 @@ export const TeacherPortalPage: React.FC = () => {
                         <span className="text-muted-foreground font-semibold">
                           Identificação Geral
                         </span>
-                        <div className="font-extrabold text-foreground text-sm">{profile.name}</div>
-                        <div className="text-muted-foreground mt-0.5">{profile.email}</div>
+                        <div className="font-extrabold text-foreground text-sm">{profile?.name}</div>
+                        <div className="text-muted-foreground mt-0.5">{profile?.email}</div>
                       </div>
                       <div className="p-4 rounded-xl border border-border bg-secondary/5 space-y-1">
                         <span className="text-muted-foreground font-semibold">

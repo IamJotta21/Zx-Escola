@@ -589,6 +589,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       status: 'success',
       data: {
         id: 'prof-roberto-id',
+        name: 'Roberto Abreu',
         firstName: 'Roberto',
         lastName: 'Abreu',
         email: 'professor@escola.com',
