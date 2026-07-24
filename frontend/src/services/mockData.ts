@@ -431,8 +431,17 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
         summary: {
           totalTenants: 5,
           activeTenants: 4,
+          suspendedTenants: 1,
           totalUsers: 150,
+          totalStudents: 120,
+          totalTeachers: 30,
           monthlyRevenue: 1500,
+          totalRevenue: 24000,
+          activePlans: {
+            BASIC: 3,
+            PRO: 1,
+            ENTERPRISE: 1
+          }
         },
         charts: {
           monthlyGrowth: [

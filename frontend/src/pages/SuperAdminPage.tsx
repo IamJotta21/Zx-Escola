@@ -118,16 +118,21 @@ export const SuperAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/superadmin/dashboard');
-      setSummary(res.data.data?.summary || {
-        totalTenants: 0,
-        activeTenants: 0,
-        suspendedTenants: 0,
-        totalUsers: 0,
-        totalStudents: 0,
-        totalTeachers: 0,
-        monthlyRevenue: 0,
-        totalRevenue: 0,
-        activePlans: { BASIC: 0, PRO: 0, ENTERPRISE: 0 },
+      const summaryData = res.data.data?.summary;
+      setSummary({
+        totalTenants: summaryData?.totalTenants ?? 0,
+        activeTenants: summaryData?.activeTenants ?? 0,
+        suspendedTenants: summaryData?.suspendedTenants ?? 0,
+        totalUsers: summaryData?.totalUsers ?? 0,
+        totalStudents: summaryData?.totalStudents ?? 0,
+        totalTeachers: summaryData?.totalTeachers ?? 0,
+        monthlyRevenue: summaryData?.monthlyRevenue ?? 0,
+        totalRevenue: summaryData?.totalRevenue ?? 0,
+        activePlans: {
+          BASIC: summaryData?.activePlans?.BASIC ?? 0,
+          PRO: summaryData?.activePlans?.PRO ?? 0,
+          ENTERPRISE: summaryData?.activePlans?.ENTERPRISE ?? 0,
+        },
       });
       setCharts(res.data.data?.charts || {
         schoolsGrowth: [],
@@ -420,17 +425,17 @@ export const SuperAdminPage: React.FC = () => {
             <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl border border-border bg-card text-center space-y-1">
                 <span className="text-xs font-bold text-muted-foreground uppercase">Plano Basic</span>
-                <div className="text-3xl font-black font-mono text-foreground">{summary.activePlans.BASIC}</div>
+                <div className="text-3xl font-black font-mono text-foreground">{summary.activePlans?.BASIC ?? 0}</div>
                 <span className="text-[10px] text-muted-foreground">Escolas</span>
               </div>
               <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 text-center space-y-1">
                 <span className="text-xs font-bold text-primary uppercase">Plano Pro</span>
-                <div className="text-3xl font-black font-mono text-primary">{summary.activePlans.PRO}</div>
+                <div className="text-3xl font-black font-mono text-primary">{summary.activePlans?.PRO ?? 0}</div>
                 <span className="text-[10px] text-muted-foreground">Escolas</span>
               </div>
               <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 text-center space-y-1">
                 <span className="text-xs font-bold text-amber-500 uppercase">Plano Enterprise</span>
-                <div className="text-3xl font-black font-mono text-amber-500">{summary.activePlans.ENTERPRISE}</div>
+                <div className="text-3xl font-black font-mono text-amber-500">{summary.activePlans?.ENTERPRISE ?? 0}</div>
                 <span className="text-[10px] text-muted-foreground">Escolas</span>
               </div>
             </CardContent>
