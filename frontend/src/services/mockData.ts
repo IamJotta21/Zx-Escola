@@ -1231,25 +1231,86 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
   // 7. ENROLLMENTS / ACADEMIC PROCESSES
   if (cleanUrl === '/enrollments') {
+    const list = getStore('enrollments', [
+      {
+        id: 'matr-1',
+        status: 'MATRICULADO',
+        student: {
+          user: {
+            email: 'aluno@escola.com',
+            profile: { firstName: 'Lucas', lastName: 'Santos' }
+          }
+        },
+        createdAt: new Date().toISOString()
+      }
+    ]);
+
     return {
       status: 'success',
       data: {
-        enrollments: [
-          {
-            id: 'matr-1',
-            status: 'MATRICULADO',
-            student: {
-              user: {
-                email: 'aluno@escola.com',
-                profile: { firstName: 'Lucas', lastName: 'Santos' }
-              }
-            },
-            createdAt: new Date().toISOString()
-          }
-        ],
-        meta: { total: 1, page: 1, limit: 10, totalPages: 1 }
+        enrollments: list,
+        meta: { total: list.length, page: 1, limit: 10, totalPages: 1 }
       }
     };
+  }
+
+  if (cleanUrl === '/enrollments/process') {
+    if (methodLower === 'post') {
+      const studentId = reqBody.studentId;
+      const status = reqBody.status;
+
+      // Update student status
+      const studentsList = getStore('students', []);
+      const studentIdx = studentsList.findIndex((s: any) => s.id === studentId);
+      let studentEmail = 'estudante@escola.com';
+      let studentName = { firstName: 'Estudante', lastName: '' };
+
+      if (studentIdx !== -1) {
+        studentsList[studentIdx].status = status;
+        setStore('students', studentsList);
+        studentEmail = studentsList[studentIdx].user?.email || studentEmail;
+        studentName.firstName = studentsList[studentIdx].user?.profile?.firstName || studentName.firstName;
+        studentName.lastName = studentsList[studentIdx].user?.profile?.lastName || studentName.lastName;
+      }
+
+      // Add enrollment log
+      const enrollmentsList = getStore('enrollments', [
+        {
+          id: 'matr-1',
+          status: 'MATRICULADO',
+          student: {
+            user: {
+              email: 'aluno@escola.com',
+              profile: { firstName: 'Lucas', lastName: 'Santos' }
+            }
+          },
+          createdAt: new Date().toISOString()
+        }
+      ]);
+
+      const newEnrollment = {
+        id: `matr-${Math.random().toString(36).substring(2, 9)}`,
+        status: status,
+        student: {
+          user: {
+            email: studentEmail,
+            profile: {
+              firstName: studentName.firstName,
+              lastName: studentName.lastName
+            }
+          }
+        },
+        createdAt: new Date().toISOString()
+      };
+
+      enrollmentsList.push(newEnrollment);
+      setStore('enrollments', enrollmentsList);
+
+      return {
+        status: 'success',
+        data: newEnrollment
+      };
+    }
   }
 
   // 8. REPORTS
@@ -1794,10 +1855,64 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
   }
 
   if (cleanUrl === '/academic/report-cards') {
-    return {
-      status: 'success',
-      data: []
-    };
+    const list = getStore('report_cards', [
+      {
+        id: 'rc-1',
+        studentId: 'aluno-lucas-id',
+        studentName: 'Lucas Santos',
+        classId: 'turma-a-id',
+        subject: 'Matemática',
+        schoolYear: '2026',
+        bimester1: 8.5,
+        bimester2: 7.0,
+        bimester3: null,
+        bimester4: null,
+        remedialGrade: null,
+        absences: 2,
+        status: 'EM_ANDAMENTO'
+      }
+    ]);
+
+    if (methodLower === 'get') {
+      const classId = params?.classId;
+      const studentId = params?.studentId;
+      let filtered = [...list];
+      if (classId) {
+        filtered = filtered.filter(rc => rc.classId === classId);
+      }
+      if (studentId) {
+        filtered = filtered.filter(rc => rc.studentId === studentId);
+      }
+      return { status: 'success', data: filtered };
+    }
+
+    if (methodLower === 'post') {
+      const key = `${reqBody.studentId}_${reqBody.subject}_${reqBody.schoolYear || '2026'}`;
+      const idx = list.findIndex(rc => `${rc.studentId}_${rc.subject}_${rc.schoolYear}` === key);
+
+      const newItem = {
+        id: idx !== -1 ? list[idx].id : `rc-${Math.random().toString(36).substring(2, 9)}`,
+        studentId: reqBody.studentId,
+        subject: reqBody.subject,
+        schoolYear: reqBody.schoolYear || '2026',
+        classId: reqBody.classId || (idx !== -1 ? list[idx].classId : 'turma-a-id'),
+        bimester1: reqBody.bimester1 !== undefined ? reqBody.bimester1 : (idx !== -1 ? list[idx].bimester1 : null),
+        bimester2: reqBody.bimester2 !== undefined ? reqBody.bimester2 : (idx !== -1 ? list[idx].bimester2 : null),
+        bimester3: reqBody.bimester3 !== undefined ? reqBody.bimester3 : (idx !== -1 ? list[idx].bimester3 : null),
+        bimester4: reqBody.bimester4 !== undefined ? reqBody.bimester4 : (idx !== -1 ? list[idx].bimester4 : null),
+        remedialGrade: reqBody.remedialGrade !== undefined ? reqBody.remedialGrade : (idx !== -1 ? list[idx].remedialGrade : null),
+        absences: reqBody.absences !== undefined ? Number(reqBody.absences) : (idx !== -1 ? list[idx].absences : 0),
+        status: 'EM_ANDAMENTO'
+      };
+
+      if (idx !== -1) {
+        list[idx] = newItem;
+      } else {
+        list.push(newItem);
+      }
+      setStore('report_cards', list);
+      return { status: 'success', data: newItem };
+    }
   }
 
   return { status: 'success', data: null };
