@@ -1731,9 +1731,14 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
   if (cleanUrl === '/portal/guardian/messages') {
     return {
       status: 'success',
-      data: [
-        { id: 'msg-1', sender: 'Coordenação', content: 'Nota de aviso sobre o feriado escolar.', createdAt: new Date().toISOString() }
-      ]
+      data: {
+        notifications: [
+          { id: 'not-g-1', title: 'Comunicado de Provas', content: 'As avaliações do 2º bimestre começam no dia 15.', isRead: false, createdAt: new Date().toISOString() }
+        ],
+        announcements: [
+          { id: 'ann-g-1', title: 'Feriado Escolar', content: 'Lembramos que dia 07 não haverá aula devido ao feriado nacional.', createdAt: new Date().toISOString() }
+        ]
+      }
     };
   }
 

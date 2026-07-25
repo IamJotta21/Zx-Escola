@@ -190,7 +190,12 @@ export const ParentPortalPage: React.FC = () => {
         setGrades(gradesRes.data.data || []);
         setFinance(financeRes.data.data || []);
         setAttendance(attendanceRes.data.data || null);
-        setMessages(messagesRes.data.data || { notifications: [], announcements: [] });
+        const msgData = messagesRes.data?.data;
+        setMessages(
+          msgData && Array.isArray(msgData.announcements)
+            ? msgData
+            : { notifications: [], announcements: [] }
+        );
         setDocuments(documentsRes.data.data || []);
       } catch (err) {
         addToast({ type: 'error', message: 'Erro ao buscar informações do aluno.' });
@@ -825,12 +830,12 @@ export const ParentPortalPage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  {messages.announcements.length === 0 ? (
+                  {(messages?.announcements || []).length === 0 ? (
                     <p className="text-center py-8 text-muted-foreground text-xs">
                       Nenhum comunicado disponível no momento.
                     </p>
                   ) : (
-                    messages.announcements.map((ann) => (
+                    (messages?.announcements || []).map((ann) => (
                       <div key={ann.id} className="p-4 rounded-xl border border-border/80 bg-card space-y-2">
                         <div className="flex items-center justify-between">
                           <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
