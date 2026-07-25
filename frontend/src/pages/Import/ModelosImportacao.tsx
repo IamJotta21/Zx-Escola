@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom';
 
 export const ModelosImportacao: React.FC = () => {
   const { models, loading, fetchModels, createModel } = useImport();
+  const safeModels = models || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -90,13 +91,13 @@ export const ModelosImportacao: React.FC = () => {
 
       {/* Grid of models */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading && models.length === 0 ? (
+        {loading && safeModels.length === 0 ? (
           [1, 2, 3].map((i) => (
             <Card key={i} className="animate-pulse border-border/60">
               <CardContent className="h-48" />
             </Card>
           ))
-        ) : models.length === 0 ? (
+        ) : safeModels.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-card">
             <Settings2 className="h-10 w-10 text-muted-foreground mb-3" />
             <p className="text-sm font-semibold text-foreground">Nenhum modelo cadastrado</p>
@@ -105,7 +106,7 @@ export const ModelosImportacao: React.FC = () => {
             </p>
           </div>
         ) : (
-          models.map((model) => (
+          safeModels.map((model) => (
             <Card
               key={model.id}
               className="border-border/60 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
