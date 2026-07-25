@@ -1,6 +1,894 @@
+// Helper functions to manage Mock Database in LocalStorage
+const getStore = <T>(key: string, initialData: T): T => {
+  if (typeof window === 'undefined') return initialData;
+  const stored = localStorage.getItem(`@ZxEscola:mockDb:${key}`);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return initialData;
+    }
+  }
+  localStorage.setItem(`@ZxEscola:mockDb:${key}`, JSON.stringify(initialData));
+  return initialData;
+};
+
+const setStore = <T>(key: string, data: T): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`@ZxEscola:mockDb:${key}`, JSON.stringify(data));
+  }
+};
+
 // Mock Database for Zx-Escola Offline/Demo Session
 export const getMockResponse = (url: string, method: string, params?: any, data?: any): any => {
   const cleanUrl = url.split('?')[0].replace(/^\/api/, '');
+  const parts = cleanUrl.split('/').filter(Boolean);
+  const resource = parts[0];
+  const methodLower = method.toLowerCase();
+
+  let reqBody = data;
+  if (typeof data === 'string') {
+    try {
+      reqBody = JSON.parse(data);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Intercept write operations and collection queries for persistence
+  // --- STUDENTS ---
+  if (resource === 'students') {
+    const list = getStore('students', [
+      {
+        id: 'aluno-lucas-id',
+        cpf: '123.456.789-00',
+        rg: '12.345.678-9',
+        gender: 'Masculino',
+        status: 'MATRICULADO',
+        whatsapp: '(11) 92222-1111',
+        user: {
+          email: 'aluno@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Lucas',
+            lastName: 'Santos',
+            phone: '(11) 92222-1111',
+            birthDate: '2010-08-20',
+          }
+        }
+      },
+      {
+        id: 'aluno-mariana-id',
+        cpf: '987.654.321-11',
+        rg: '98.765.432-1',
+        gender: 'Feminino',
+        status: 'MATRICULADO',
+        whatsapp: '(11) 91111-2222',
+        user: {
+          email: 'mariana@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Mariana',
+            lastName: 'Oliveira',
+            phone: '(11) 91111-2222',
+            birthDate: '2011-03-12',
+          }
+        }
+      },
+      {
+        id: 'aluno-gabriel-id',
+        cpf: '456.789.123-22',
+        rg: '45.678.912-3',
+        gender: 'Masculino',
+        status: 'LISTA_DE_ESPERA',
+        whatsapp: '(11) 93333-4444',
+        user: {
+          email: 'gabriel@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Gabriel',
+            lastName: 'Souza',
+            phone: '(11) 93333-4444',
+            birthDate: '2012-11-05',
+          }
+        }
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        let filtered = [...list];
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(item => 
+            item.user?.profile?.firstName?.toLowerCase().includes(s) ||
+            item.user?.profile?.lastName?.toLowerCase().includes(s) ||
+            item.user?.email?.toLowerCase().includes(s)
+          );
+        }
+        if (params?.status) {
+          filtered = filtered.filter(item => item.status === params.status);
+        }
+        return {
+          status: 'success',
+          data: {
+            students: filtered,
+            meta: { total: filtered.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `student-${Math.random().toString(36).substring(2, 9)}`;
+        const newStudent = {
+          id: newId,
+          cpf: reqBody.cpf || '',
+          rg: reqBody.rg || '',
+          gender: reqBody.gender || 'Masculino',
+          status: reqBody.status || 'MATRICULADO',
+          whatsapp: reqBody.whatsapp || reqBody.phone || '',
+          address: reqBody.address || '',
+          city: reqBody.city || '',
+          state: reqBody.state || '',
+          cep: reqBody.cep || '',
+          guardianName: reqBody.guardianName || '',
+          fatherName: reqBody.fatherName || '',
+          motherName: reqBody.motherName || '',
+          notes: reqBody.notes || '',
+          user: {
+            id: `user-${newId}`,
+            email: reqBody.email,
+            isActive: reqBody.isActive !== false,
+            profile: {
+              firstName: reqBody.firstName,
+              lastName: reqBody.lastName,
+              phone: reqBody.phone || '',
+              birthDate: reqBody.birthDate || '',
+            }
+          }
+        };
+        list.push(newStudent);
+        setStore('students', list);
+        return { status: 'success', data: newStudent };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'get') {
+        const item = list.find(s => s.id === targetId);
+        if (item) return { status: 'success', data: item };
+        return { status: 'error', message: 'Aluno não encontrado' };
+      }
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(s => s.id === targetId);
+        if (idx !== -1) {
+          const updated = {
+            ...list[idx],
+            ...reqBody,
+            user: {
+              ...list[idx].user,
+              email: reqBody.email || list[idx].user.email,
+              profile: {
+                ...list[idx].user.profile,
+                firstName: reqBody.firstName || list[idx].user.profile.firstName,
+                lastName: reqBody.lastName || list[idx].user.profile.lastName,
+                phone: reqBody.phone || list[idx].user.profile.phone,
+                birthDate: reqBody.birthDate || list[idx].user.profile.birthDate,
+              }
+            }
+          };
+          list[idx] = updated;
+          setStore('students', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Aluno não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(s => s.id !== targetId);
+        setStore('students', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- TEACHERS ---
+  if (resource === 'teachers') {
+    const list = getStore('teachers', [
+      {
+        id: 'prof-roberto-id',
+        subjects: 'Matemática, Física',
+        workload: 40,
+        classesCount: 2,
+        user: {
+          email: 'professor@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Roberto',
+            lastName: 'Abreu',
+            phone: '(11) 95555-4444',
+          }
+        },
+        classes: [
+          { id: 'turma-a-id', name: '9º Ano A' },
+          { id: 'turma-b-id', name: '1º Ano Médio B' }
+        ]
+      },
+      {
+        id: 'prof-ana-id',
+        subjects: 'Português, Redação',
+        workload: 30,
+        classesCount: 1,
+        user: {
+          email: 'ana.prof@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Ana',
+            lastName: 'Gomes',
+            phone: '(11) 94444-5555',
+          }
+        },
+        classes: [
+          { id: 'turma-a-id', name: '9º Ano A' }
+        ]
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            teachers: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `teacher-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          subjects: reqBody.subjects || '',
+          workload: Number(reqBody.workload) || 20,
+          classesCount: 0,
+          user: {
+            email: reqBody.email,
+            isActive: reqBody.isActive !== false,
+            profile: {
+              firstName: reqBody.firstName,
+              lastName: reqBody.lastName,
+              phone: reqBody.phone || '',
+            }
+          },
+          classes: []
+        };
+        list.push(newItem);
+        setStore('teachers', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'get') {
+        const item = list.find(t => t.id === targetId);
+        if (item) return { status: 'success', data: item };
+        return { status: 'error', message: 'Professor não encontrado' };
+      }
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(t => t.id === targetId);
+        if (idx !== -1) {
+          const updated = {
+            ...list[idx],
+            subjects: reqBody.subjects || list[idx].subjects,
+            workload: reqBody.workload !== undefined ? Number(reqBody.workload) : list[idx].workload,
+            user: {
+              ...list[idx].user,
+              email: reqBody.email || list[idx].user.email,
+              profile: {
+                ...list[idx].user.profile,
+                firstName: reqBody.firstName || list[idx].user.profile.firstName,
+                lastName: reqBody.lastName || list[idx].user.profile.lastName,
+                phone: reqBody.phone || list[idx].user.profile.phone,
+              }
+            }
+          };
+          list[idx] = updated;
+          setStore('teachers', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Professor não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(t => t.id !== targetId);
+        setStore('teachers', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- GUARDIANS ---
+  if (resource === 'guardians') {
+    const list = getStore('guardians', [
+      {
+        id: 'guardian-pedro-id',
+        name: 'Pedro Santos',
+        email: 'pais@escola.com',
+        phone: '(11) 93333-2222',
+        whatsapp: '(11) 93333-2222',
+        relationship: 'Pai',
+        isFinancial: true,
+        user: { email: 'pais@escola.com' },
+        students: [
+          {
+            student: {
+              id: 'aluno-lucas-id',
+              user: {
+                profile: { firstName: 'Lucas', lastName: 'Santos' }
+              }
+            }
+          }
+        ]
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            guardians: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `guardian-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          name: reqBody.name || `${reqBody.firstName || ''} ${reqBody.lastName || ''}`.trim(),
+          email: reqBody.email,
+          phone: reqBody.phone || '',
+          whatsapp: reqBody.whatsapp || reqBody.phone || '',
+          relationship: reqBody.relationship || 'Outro',
+          isFinancial: reqBody.isFinancial !== false,
+          user: { email: reqBody.email },
+          students: []
+        };
+        list.push(newItem);
+        setStore('guardians', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'get') {
+        const item = list.find(g => g.id === targetId);
+        if (item) return { status: 'success', data: item };
+        return { status: 'error', message: 'Responsável não encontrado' };
+      }
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(g => g.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody };
+          list[idx] = updated;
+          setStore('guardians', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Responsável não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(g => g.id !== targetId);
+        setStore('guardians', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- EMPLOYEES ---
+  if (resource === 'employees') {
+    const list = getStore('employees', [
+      {
+        id: 'empl-flavia-id',
+        role: 'STAFF',
+        department: 'Secretaria',
+        notes: 'Atendimento geral e matrículas.',
+        user: {
+          email: 'secretaria@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Flavia',
+            lastName: 'Lima',
+            phone: '(11) 96666-5555',
+          }
+        }
+      },
+      {
+        id: 'empl-marcos-id',
+        role: 'FINANCEIRO',
+        department: 'Financeiro',
+        notes: 'Faturamento, mensalidades e contas a pagar.',
+        user: {
+          email: 'financeiro@escola.com',
+          isActive: true,
+          profile: {
+            firstName: 'Marcos',
+            lastName: 'Souza',
+            phone: '(11) 94444-3333',
+          }
+        }
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            employees: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `empl-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          role: reqBody.role || 'STAFF',
+          department: reqBody.department || '',
+          notes: reqBody.notes || '',
+          user: {
+            email: reqBody.email,
+            isActive: reqBody.isActive !== false,
+            profile: {
+              firstName: reqBody.firstName,
+              lastName: reqBody.lastName,
+              phone: reqBody.phone || '',
+            }
+          }
+        };
+        list.push(newItem);
+        setStore('employees', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'get') {
+        const item = list.find(e => e.id === targetId);
+        if (item) return { status: 'success', data: item };
+        return { status: 'error', message: 'Funcionário não encontrado' };
+      }
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(e => e.id === targetId);
+        if (idx !== -1) {
+          const updated = {
+            ...list[idx],
+            role: reqBody.role || list[idx].role,
+            department: reqBody.department || list[idx].department,
+            notes: reqBody.notes || list[idx].notes,
+            user: {
+              ...list[idx].user,
+              email: reqBody.email || list[idx].user.email,
+              profile: {
+                ...list[idx].user.profile,
+                firstName: reqBody.firstName || list[idx].user.profile.firstName,
+                lastName: reqBody.lastName || list[idx].user.profile.lastName,
+                phone: reqBody.phone || list[idx].user.profile.phone,
+              }
+            }
+          };
+          list[idx] = updated;
+          setStore('employees', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Funcionário não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(e => e.id !== targetId);
+        setStore('employees', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- CLASSES ---
+  if (resource === 'classes') {
+    const list = getStore('classes', [
+      {
+        id: 'turma-a-id',
+        name: '9º Ano A',
+        gradeYear: '9º Ano',
+        schoolYear: '2026',
+        roomId: 'sala-101-id',
+        room: { id: 'sala-101-id', name: 'Sala 101' },
+        teacherId: 'prof-roberto-id',
+        teacher: {
+          id: 'prof-roberto-id',
+          subjects: 'Matemática',
+          user: {
+            profile: { firstName: 'Roberto', lastName: 'Abreu' }
+          }
+        },
+        students: [
+          {
+            id: 'aluno-lucas-id',
+            status: 'MATRICULADO',
+            user: {
+              email: 'aluno@escola.com',
+              profile: { firstName: 'Lucas', lastName: 'Santos' }
+            }
+          },
+          {
+            id: 'aluno-mariana-id',
+            status: 'MATRICULADO',
+            user: {
+              email: 'mariana@escola.com',
+              profile: { firstName: 'Mariana', lastName: 'Oliveira' }
+            }
+          }
+        ]
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return { status: 'success', data: list };
+      }
+      if (methodLower === 'post') {
+        const newId = `class-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          name: reqBody.name,
+          gradeYear: reqBody.gradeYear || '',
+          schoolYear: reqBody.schoolYear || new Date().getFullYear().toString(),
+          roomId: reqBody.roomId || null,
+          room: reqBody.roomId ? { id: reqBody.roomId, name: 'Sala' } : null,
+          teacherId: reqBody.teacherId || null,
+          teacher: reqBody.teacherId ? { id: reqBody.teacherId, subjects: 'Matéria', user: { profile: { firstName: 'Prof.', lastName: '' } } } : null,
+          students: []
+        };
+        list.push(newItem);
+        setStore('classes', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'get') {
+        const item = list.find(c => c.id === targetId);
+        if (item) return { status: 'success', data: item };
+        return { status: 'error', message: 'Turma não encontrada' };
+      }
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(c => c.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody };
+          list[idx] = updated;
+          setStore('classes', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Turma não encontrada' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(c => c.id !== targetId);
+        setStore('classes', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- ROOMS ---
+  if (resource === 'rooms') {
+    const list = getStore('rooms', [
+      { id: 'sala-101-id', name: 'Sala 101', capacity: 35, type: 'TEORICA' },
+      { id: 'sala-102-id', name: 'Laboratório de Física', capacity: 25, type: 'LABORATORIO' }
+    ]);
+    if (parts.length === 1) {
+      if (methodLower === 'get') return { status: 'success', data: list };
+      if (methodLower === 'post') {
+        const newId = `room-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = { id: newId, name: reqBody.name, capacity: Number(reqBody.capacity) || 30, type: reqBody.type || 'TEORICA' };
+        list.push(newItem);
+        setStore('rooms', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'delete') {
+        const filtered = list.filter(r => r.id !== targetId);
+        setStore('rooms', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- CALENDAR EVENTS ---
+  if (resource === 'calendar' && parts[1] === 'events') {
+    const list = getStore('calendar_events', [
+      {
+        id: 'evt-1',
+        title: 'Reunião de Pais e Mestres',
+        description: 'Entrega de boletins do 1º Bimestre.',
+        startDate: new Date().toISOString().split('T')[0] + 'T09:00:00',
+        endDate: new Date().toISOString().split('T')[0] + 'T12:00:00',
+        type: 'REUNIAO',
+        color: 'bg-blue-500',
+        classId: 'turma-a-id',
+        targetAudience: 'RESPONSAVEIS'
+      },
+      {
+        id: 'evt-2',
+        title: 'Feira de Ciências',
+        description: 'Apresentação de projetos dos alunos.',
+        startDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0] + 'T08:00:00',
+        endDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0] + 'T17:00:00',
+        type: 'EVENTO',
+        color: 'bg-emerald-500',
+        classId: null,
+        targetAudience: 'TODOS'
+      }
+    ]);
+
+    if (parts.length === 2) {
+      if (methodLower === 'get') {
+        return { status: 'success', data: list };
+      }
+      if (methodLower === 'post') {
+        const newId = `evt-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          title: reqBody.title,
+          description: reqBody.description || '',
+          startDate: reqBody.startDate,
+          endDate: reqBody.endDate,
+          type: reqBody.type || 'EVENTO',
+          color: reqBody.color || 'bg-primary',
+          classId: reqBody.classId || null,
+          targetAudience: reqBody.targetAudience || 'TODOS'
+        };
+        list.push(newItem);
+        setStore('calendar_events', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 3) {
+      const targetId = parts[2];
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(e => e.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody };
+          list[idx] = updated;
+          setStore('calendar_events', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Evento não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(e => e.id !== targetId);
+        setStore('calendar_events', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- SCHOOLDOCS ---
+  if (resource === 'schooldocs') {
+    const list = getStore('schooldocs', [
+      {
+        id: 'doc-1',
+        type: 'DECLARACAO',
+        title: 'Declaração de Matrícula - Lucas Santos',
+        content: 'DECLARAÇÃO DE MATRÍCULA\n\nDeclaramos para os devidos fins que o(a) aluno(a) Lucas Santos está regularmente matriculado(a) nesta instituição de ensino no ano letivo de 2026...',
+        studentId: 'student-1',
+        studentName: 'Lucas Santos',
+        issuedBy: 'diretor@zxescola.com.br',
+        status: 'EMITIDO',
+        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 86400000).toISOString()
+      },
+      {
+        id: 'doc-2',
+        type: 'HISTORICO',
+        title: 'Histórico Escolar Parcial - Mariana Costa',
+        content: 'HISTÓRICO ESCOLAR\n\nAluno(a): Mariana Costa...',
+        studentId: 'student-2',
+        studentName: 'Mariana Costa',
+        issuedBy: 'diretor@zxescola.com.br',
+        status: 'RASCUNHO',
+        createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 5 * 86400000).toISOString()
+      }
+    ]);
+
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return { status: 'success', data: list };
+      }
+      if (methodLower === 'post') {
+        const newId = `doc-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          type: reqBody.type,
+          title: reqBody.title,
+          content: reqBody.content || '',
+          studentId: reqBody.studentId || null,
+          studentName: reqBody.studentName || '',
+          issuedBy: reqBody.issuedBy || 'diretor@zxescola.com.br',
+          status: reqBody.status || 'RASCUNHO',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        list.push(newItem);
+        setStore('schooldocs', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(d => d.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody, updatedAt: new Date().toISOString() };
+          list[idx] = updated;
+          setStore('schooldocs', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Documento não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(d => d.id !== targetId);
+        setStore('schooldocs', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    }
+  }
+
+  // --- LIBRARY ---
+  if (resource === 'library') {
+    const subResource = parts[1];
+
+    if (subResource === 'books') {
+      const list = getStore('library_books', [
+        { id: 'book-1', title: 'Dom Casmurro', author: 'Machado de Assis', isbn: '978-8572325324', publisher: 'Principis', year: 1899, totalQty: 5, availableQty: 4, category: { id: 'cat-1', name: 'Literatura Brasileira' } },
+        { id: 'book-2', title: 'Física Clássica', author: 'Caio Calçada', isbn: '978-8535712345', publisher: 'Atual', year: 2012, totalQty: 10, availableQty: 10, category: { id: 'cat-2', name: 'Ciências' } }
+      ]);
+
+      if (parts.length === 2) {
+        if (methodLower === 'get') {
+          return { status: 'success', data: list };
+        }
+        if (methodLower === 'post') {
+          const newId = `book-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = {
+            id: newId,
+            title: reqBody.title,
+            author: reqBody.author,
+            isbn: reqBody.isbn,
+            publisher: reqBody.publisher || '',
+            year: Number(reqBody.year) || new Date().getFullYear(),
+            totalQty: Number(reqBody.totalQty) || 1,
+            availableQty: Number(reqBody.totalQty) || 1,
+            category: reqBody.categoryId ? { id: reqBody.categoryId, name: 'Categoria' } : { id: 'cat-1', name: 'Literatura Brasileira' }
+          };
+          list.push(newItem);
+          setStore('library_books', list);
+          return { status: 'success', data: newItem };
+        }
+      } else if (parts.length === 3) {
+        const targetId = parts[2];
+        if (methodLower === 'put' || methodLower === 'patch') {
+          const idx = list.findIndex(b => b.id === targetId);
+          if (idx !== -1) {
+            const updated = { ...list[idx], ...reqBody };
+            list[idx] = updated;
+            setStore('library_books', list);
+            return { status: 'success', data: updated };
+          }
+          return { status: 'error', message: 'Livro não encontrado' };
+        }
+        if (methodLower === 'delete') {
+          const filtered = list.filter(b => b.id !== targetId);
+          setStore('library_books', filtered);
+          return { status: 'success', data: { id: targetId } };
+        }
+      }
+    }
+
+    if (subResource === 'categories') {
+      const list = getStore('library_categories', [
+        { id: 'cat-1', name: 'Literatura Brasileira', description: 'Obras de autores brasileiros.' },
+        { id: 'cat-2', name: 'Ciências', description: 'Física, Química, Biologia.' }
+      ]);
+      if (parts.length === 2) {
+        if (methodLower === 'get') return { status: 'success', data: list };
+        if (methodLower === 'post') {
+          const newId = `cat-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = { id: newId, name: reqBody.name, description: reqBody.description || '' };
+          list.push(newItem);
+          setStore('library_categories', list);
+          return { status: 'success', data: newItem };
+        }
+      } else if (parts.length === 3) {
+        const targetId = parts[2];
+        if (methodLower === 'delete') {
+          const filtered = list.filter(c => c.id !== targetId);
+          setStore('library_categories', filtered);
+          return { status: 'success', data: { id: targetId } };
+        }
+      }
+    }
+
+    if (subResource === 'loans') {
+      const list = getStore('library_loans', [
+        { id: 'loan-1', book: { title: 'Dom Casmurro' }, borrowerName: 'Maria Silva (Aluna)', loanDate: '2026-07-15', returnDate: null, dueDate: '2026-07-22', status: 'ATIVO' }
+      ]);
+      if (parts.length === 2) {
+        if (methodLower === 'get') return { status: 'success', data: list };
+        if (methodLower === 'post') {
+          const newId = `loan-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = {
+            id: newId,
+            book: { title: reqBody.bookTitle || 'Livro Selecionado' },
+            borrowerName: reqBody.borrowerName,
+            loanDate: reqBody.loanDate || new Date().toISOString().split('T')[0],
+            dueDate: reqBody.dueDate,
+            returnDate: null,
+            status: 'ATIVO'
+          };
+          list.push(newItem);
+          setStore('library_loans', list);
+          return { status: 'success', data: newItem };
+        }
+      } else if (parts.length === 3) {
+        const targetId = parts[2];
+        if (methodLower === 'put' || methodLower === 'patch') {
+          const idx = list.findIndex(l => l.id === targetId);
+          if (idx !== -1) {
+            const updated = { ...list[idx], ...reqBody };
+            list[idx] = updated;
+            setStore('library_loans', list);
+            return { status: 'success', data: updated };
+          }
+        }
+      }
+    }
+
+    if (subResource === 'reservations') {
+      const list = getStore('library_reservations', []);
+      if (parts.length === 2) {
+        if (methodLower === 'get') return { status: 'success', data: list };
+        if (methodLower === 'post') {
+          const newId = `res-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = {
+            id: newId,
+            book: { title: 'Livro' },
+            requesterName: reqBody.requesterName,
+            status: 'AGUARDANDO',
+            createdAt: new Date().toISOString()
+          };
+          list.push(newItem);
+          setStore('library_reservations', list);
+          return { status: 'success', data: newItem };
+        }
+      }
+    }
+  }
+
+  // --- COMMUNICATION ANNOUNCEMENTS ---
+  if (resource === 'communication' && parts[1] === 'announcements') {
+    const list = getStore('announcements', [
+      { id: 'ann-1', title: 'Comunicado Geral', content: 'Férias escolares se aproximando. Fiquem atentos ao calendário de avaliações.', type: 'GERAL', createdAt: new Date().toISOString() }
+    ]);
+    if (parts.length === 2) {
+      if (methodLower === 'get') return { status: 'success', data: list };
+      if (methodLower === 'post') {
+        const newId = `ann-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          title: reqBody.title,
+          content: reqBody.content,
+          type: reqBody.type || 'GERAL',
+          createdAt: new Date().toISOString()
+        };
+        list.push(newItem);
+        setStore('announcements', list);
+        return { status: 'success', data: newItem };
+      }
+    }
+  }
+
+  // Fallback to static mock responses below
 
   // 1. AUTH / PROFILE ENDPOINTS
   if (cleanUrl === '/auth/profile') {
