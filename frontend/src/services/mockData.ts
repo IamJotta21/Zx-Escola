@@ -103,11 +103,24 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
           filtered = filtered.filter(item => 
             item.user?.profile?.firstName?.toLowerCase().includes(s) ||
             item.user?.profile?.lastName?.toLowerCase().includes(s) ||
-            item.user?.email?.toLowerCase().includes(s)
+            item.user?.email?.toLowerCase().includes(s) ||
+            item.cpf?.includes(s) ||
+            item.rg?.includes(s) ||
+            item.whatsapp?.includes(s)
           );
         }
-        if (params?.status) {
-          filtered = filtered.filter(item => item.status === params.status);
+        if (params?.gender) {
+          filtered = filtered.filter(item => item.gender === params.gender);
+        }
+        if (params?.isActive) {
+          const activeBool = params.isActive === 'true';
+          filtered = filtered.filter(item => item.user?.isActive === activeBool);
+        }
+        if (params?.state) {
+          filtered = filtered.filter(item => 
+            (item.state?.toLowerCase() === params.state.toLowerCase()) || 
+            (item.user?.profile?.state?.toLowerCase() === params.state.toLowerCase())
+          );
         }
         return {
           status: 'success',
@@ -233,11 +246,21 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
     if (parts.length === 1) {
       if (methodLower === 'get') {
+        let filtered = [...list];
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(item => 
+            item.user?.profile?.firstName?.toLowerCase().includes(s) ||
+            item.user?.profile?.lastName?.toLowerCase().includes(s) ||
+            item.user?.email?.toLowerCase().includes(s) ||
+            item.subjects?.toLowerCase().includes(s)
+          );
+        }
         return {
           status: 'success',
           data: {
-            teachers: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+            teachers: filtered,
+            meta: { total: filtered.length, page: 1, limit: 100, totalPages: 1 }
           }
         };
       }
@@ -329,11 +352,27 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
     if (parts.length === 1) {
       if (methodLower === 'get') {
+        let filtered = [...list];
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(item => 
+            item.name?.toLowerCase().includes(s) ||
+            item.email?.toLowerCase().includes(s) ||
+            item.phone?.includes(s)
+          );
+        }
+        if (params?.relationship) {
+          filtered = filtered.filter(item => item.relationship === params.relationship);
+        }
+        if (params?.isFinancial) {
+          const isFinBool = params.isFinancial === 'true';
+          filtered = filtered.filter(item => item.isFinancial === isFinBool);
+        }
         return {
           status: 'success',
           data: {
-            guardians: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+            guardians: filtered,
+            meta: { total: filtered.length, page: 1, limit: 100, totalPages: 1 }
           }
         };
       }
@@ -416,11 +455,22 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
     if (parts.length === 1) {
       if (methodLower === 'get') {
+        let filtered = [...list];
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(item => 
+            item.user?.profile?.firstName?.toLowerCase().includes(s) ||
+            item.user?.profile?.lastName?.toLowerCase().includes(s) ||
+            item.user?.email?.toLowerCase().includes(s) ||
+            item.department?.toLowerCase().includes(s) ||
+            item.role?.toLowerCase().includes(s)
+          );
+        }
         return {
           status: 'success',
           data: {
-            employees: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+            employees: filtered,
+            meta: { total: filtered.length, page: 1, limit: 100, totalPages: 1 }
           }
         };
       }
@@ -746,7 +796,16 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
       if (parts.length === 2) {
         if (methodLower === 'get') {
-          return { status: 'success', data: list };
+          let filtered = [...list];
+          if (params?.search) {
+            const s = params.search.toLowerCase();
+            filtered = filtered.filter(item => 
+              item.title?.toLowerCase().includes(s) ||
+              item.author?.toLowerCase().includes(s) ||
+              item.isbn?.includes(s)
+            );
+          }
+          return { status: 'success', data: filtered };
         }
         if (methodLower === 'post') {
           const newId = `book-${Math.random().toString(36).substring(2, 9)}`;
