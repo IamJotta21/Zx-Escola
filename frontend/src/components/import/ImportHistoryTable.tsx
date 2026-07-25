@@ -31,7 +31,9 @@ export const ImportHistoryTable: React.FC<ImportHistoryTableProps> = ({
 
   if (loading) return <SkeletonTable rows={5} cols={7} />;
 
-  if (imports.length === 0) {
+  const safeImports = imports || [];
+
+  if (safeImports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-10 border border-dashed rounded-xl bg-card">
         <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-3" />
@@ -60,7 +62,7 @@ export const ImportHistoryTable: React.FC<ImportHistoryTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {imports.map((item) => {
+          {safeImports.map((item) => {
             const statusInfo = getStatusDetails(item.status);
             const canReprocess = item.status === 'FAILED' || item.status === 'CANCELLED';
             const userName = item.user?.profile

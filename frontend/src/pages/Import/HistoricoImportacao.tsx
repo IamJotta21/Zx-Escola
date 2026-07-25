@@ -104,7 +104,7 @@ export const HistoricoImportacao: React.FC = () => {
       <Card className="border-border/60">
         <CardContent className="pt-6">
           <ImportHistoryTable
-            imports={imports}
+            imports={imports || []}
             loading={loading}
             onViewDetails={handleOpenDetails}
             onReprocess={handleReprocess}
