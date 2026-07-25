@@ -65,7 +65,9 @@ export const ExportHistoryTable: React.FC<ExportHistoryTableProps> = ({
 }) => {
   if (loading) return <SkeletonTable rows={5} cols={8} />;
 
-  if (exports.length === 0) {
+  const safeExports = exports || [];
+
+  if (safeExports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-10 border border-dashed rounded-xl bg-card">
         <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-3" />
@@ -91,7 +93,7 @@ export const ExportHistoryTable: React.FC<ExportHistoryTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {exports.map((item) => {
+          {safeExports.map((item) => {
             const statusInfo = getStatusBadge(item.status);
             const userName = item.user?.profile
               ? `${item.user.profile.firstName} ${item.user.profile.lastName}`

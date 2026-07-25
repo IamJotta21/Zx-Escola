@@ -165,7 +165,7 @@ export const HistoricoExportacao: React.FC = () => {
       <Card className="border-border/60">
         <CardContent className="pt-6">
           <ExportHistoryTable
-            exports={exports}
+            exports={exports || []}
             loading={loading}
             onDownload={handleDownload}
             onDelete={handleDelete}
