@@ -1463,22 +1463,119 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
   }
 
   if (cleanUrl === '/portal/student/grades') {
+    const list = getStore('report_cards', [
+      {
+        id: 'rc-1',
+        studentId: 'aluno-lucas-id',
+        studentName: 'Lucas Santos',
+        classId: 'turma-a-id',
+        subject: 'Matemática',
+        schoolYear: '2026',
+        bimester1: 8.5,
+        bimester2: 7.0,
+        bimester3: null,
+        bimester4: null,
+        remedialGrade: null,
+        absences: 2,
+        status: 'EM_ANDAMENTO'
+      }
+    ]);
+    const filtered = list.filter(rc => rc.studentId === 'aluno-lucas-id');
+
+    const mapped = filtered.map(rc => {
+      const gradesList = [rc.bimester1, rc.bimester2, rc.bimester3, rc.bimester4].filter(g => g !== null && g !== undefined) as number[];
+      const finalAverage = gradesList.length > 0 ? Number((gradesList.reduce((acc, v) => acc + v, 0) / gradesList.length).toFixed(2)) : null;
+
+      let status = rc.status || 'EM_ANDAMENTO';
+      if (finalAverage !== null) {
+        if (gradesList.length === 4) {
+          status = finalAverage >= 6.0 ? 'APROVADO' : 'REPROVADO';
+        } else {
+          status = 'CURSANDO';
+        }
+      }
+
+      return {
+        id: rc.id,
+        subject: rc.subject,
+        bimester1: rc.bimester1,
+        bimester2: rc.bimester2,
+        bimester3: rc.bimester3,
+        bimester4: rc.bimester4,
+        remedialGrade: rc.remedialGrade,
+        finalAverage: finalAverage,
+        absences: rc.absences || 0,
+        status: status
+      };
+    });
+
+    if (mapped.length === 0) {
+      return {
+        status: 'success',
+        data: [
+          { id: 'card-1', subject: 'Matemática', bimester1: 8.0, bimester2: 7.5, bimester3: null, bimester4: null, remedialGrade: null, finalAverage: 7.75, absences: 2, status: 'CURSANDO' },
+          { id: 'card-2', subject: 'Física', bimester1: 7.0, bimester2: 8.0, bimester3: null, bimester4: null, remedialGrade: null, finalAverage: 7.5, absences: 0, status: 'CURSANDO' }
+        ]
+      };
+    }
+
     return {
       status: 'success',
-      data: [
-        { id: 'card-1', subject: 'Matemática', b1: 8.0, b2: 7.5, b3: 8.5, b4: 7.0, rec: null, average: 7.75, status: 'APROVADO' },
-        { id: 'card-2', subject: 'Física', b1: 7.0, b2: 8.0, b3: 8.0, b4: 9.0, rec: null, average: 8.0, status: 'APROVADO' }
-      ]
+      data: mapped
     };
   }
 
   if (cleanUrl === '/portal/student/activities') {
+    const reportCards = getStore('report_cards', []);
+    const studentCards = reportCards.filter(rc => rc.studentId === 'aluno-lucas-id');
+
+    const staticActivities = [
+      { id: 'act-1', title: 'Trabalho de Física - Óptica', date: '2026-07-24', maxGrade: 10, myGrade: null },
+      { id: 'act-2', title: 'Exercícios de Álgebra', date: '2026-07-20', maxGrade: 10, myGrade: 9.5 }
+    ];
+
+    studentCards.forEach((rc, index) => {
+      if (rc.bimester1 !== null && rc.bimester1 !== undefined) {
+        staticActivities.push({
+          id: `act-grade-1-${index}`,
+          title: `Avaliação 1º Bimestre - ${rc.subject}`,
+          date: '2026-04-15',
+          maxGrade: 10,
+          myGrade: rc.bimester1
+        });
+      }
+      if (rc.bimester2 !== null && rc.bimester2 !== undefined) {
+        staticActivities.push({
+          id: `act-grade-2-${index}`,
+          title: `Avaliação 2º Bimestre - ${rc.subject}`,
+          date: '2026-07-02',
+          maxGrade: 10,
+          myGrade: rc.bimester2
+        });
+      }
+      if (rc.bimester3 !== null && rc.bimester3 !== undefined) {
+        staticActivities.push({
+          id: `act-grade-3-${index}`,
+          title: `Avaliação 3º Bimestre - ${rc.subject}`,
+          date: '2026-09-20',
+          maxGrade: 10,
+          myGrade: rc.bimester3
+        });
+      }
+      if (rc.bimester4 !== null && rc.bimester4 !== undefined) {
+        staticActivities.push({
+          id: `act-grade-4-${index}`,
+          title: `Avaliação 4º Bimestre - ${rc.subject}`,
+          date: '2026-11-28',
+          maxGrade: 10,
+          myGrade: rc.bimester4
+        });
+      }
+    });
+
     return {
       status: 'success',
-      data: [
-        { id: 'act-1', title: 'Trabalho de Física - Óptica', dueDate: '2026-08-10', status: 'PENDENTE' },
-        { id: 'act-2', title: 'Exercícios de Álgebra', dueDate: '2026-07-28', status: 'ENTREGUE' }
-      ]
+      data: staticActivities
     };
   }
 
