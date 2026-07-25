@@ -1736,6 +1736,46 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
     };
   }
 
+  if (cleanUrl === '/communication/notifications') {
+    return {
+      status: 'success',
+      data: [
+        {
+          id: 'notif-1',
+          title: 'Nova mensagem do Diretor',
+          content: 'Lembrete: amanhã haverá conselho de classe pedagógico a partir das 14:00.',
+          isRead: false,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'notif-2',
+          title: 'Documento assinado',
+          content: 'A Declaração de Matrícula de Lucas Santos foi assinada digitalmente.',
+          isRead: true,
+          createdAt: new Date(Date.now() - 86400000).toISOString()
+        }
+      ]
+    };
+  }
+
+  if (cleanUrl === '/communication/logs') {
+    return {
+      status: 'success',
+      data: [
+        {
+          id: 'log-1',
+          recipientRole: 'TEACHER',
+          recipientName: 'Roberto Abreu',
+          channel: 'EMAIL',
+          subject: 'Conselho de Classe',
+          body: 'Lembramos a todos os docentes da reunião pedagógica extraordinária de amanhã.',
+          status: 'ENVIADO',
+          createdAt: new Date(Date.now() - 3 * 86400000).toISOString()
+        }
+      ]
+    };
+  }
+
   // 16. ACADEMIC ENDPOINTS
   if (cleanUrl === '/academic/contents') {
     return {

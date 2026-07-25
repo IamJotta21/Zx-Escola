@@ -117,18 +117,18 @@ export const CommunicationPage: React.FC = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await api.get('/communication/notifications');
-      setNotifications(res.data.data);
+      setNotifications(res.data.data || []);
     } catch {
-      // Fail silently
+      setNotifications([]);
     }
   }, []);
 
   const fetchLogs = useCallback(async () => {
     try {
       const res = await api.get('/communication/logs');
-      setMessageLogs(res.data.data);
+      setMessageLogs(res.data.data || []);
     } catch {
-      // Fail silently
+      setMessageLogs([]);
     }
   }, []);
 
@@ -457,13 +457,13 @@ export const CommunicationPage: React.FC = () => {
               <div className="py-10 text-center text-muted-foreground">
                 <RefreshCw className="h-8 w-8 animate-spin text-primary mx-auto" />
               </div>
-            ) : notifications.length === 0 ? (
+            ) : (notifications || []).length === 0 ? (
               <p className="text-xs text-muted-foreground italic text-center py-10">
                 Sua caixa de entrada está limpa. Nenhuma notificação.
               </p>
             ) : (
               <div className="space-y-3">
-                {notifications.map((item) => (
+                {(notifications || []).map((item) => (
                   <div
                     key={item.id}
                     className={`p-4 rounded-xl border transition-colors flex justify-between items-start gap-4 ${
@@ -556,7 +556,7 @@ export const CommunicationPage: React.FC = () => {
       {activeTab === 'history' && isStaff && (
         <Card className="stripe-card">
           <CardContent className="p-0">
-            {messageLogs.length === 0 ? (
+            {(messageLogs || []).length === 0 ? (
               <p className="text-xs text-muted-foreground italic text-center py-10">
                 Nenhuma mensagem enviada anteriormente.
               </p>
@@ -574,7 +574,7 @@ export const CommunicationPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {messageLogs.map((log) => (
+                  {(messageLogs || []).map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-mono text-[10px]">
                         {new Date(log.createdAt).toLocaleString('pt-BR')}
