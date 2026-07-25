@@ -2290,10 +2290,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       if (methodLower === 'get') {
         return {
           status: 'success',
-          data: {
-            tenants: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
-          }
+          data: list
         };
       }
       if (methodLower === 'post') {
@@ -2335,10 +2332,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       if (methodLower === 'get') {
         return {
           status: 'success',
-          data: {
-            roles: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
-          }
+          data: list
         };
       }
       if (methodLower === 'post') {
@@ -2406,10 +2400,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       if (methodLower === 'get') {
         return {
           status: 'success',
-          data: {
-            plans: list,
-            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
-          }
+          data: list
         };
       }
       if (methodLower === 'post') {

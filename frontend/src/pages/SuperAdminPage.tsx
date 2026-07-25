@@ -150,7 +150,8 @@ export const SuperAdminPage: React.FC = () => {
   const fetchTenants = useCallback(async () => {
     try {
       const res = await api.get('/tenants');
-      setTenants(res.data.data || []);
+      const data = res.data?.data;
+      setTenants(Array.isArray(data) ? data : (data?.tenants || []));
     } catch {
       /* silent */
     }
