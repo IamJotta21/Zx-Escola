@@ -1651,34 +1651,239 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
 
   // 13. FINANCIAL
   if (cleanUrl === '/financial/summary') {
+    const tuitions = getStore('financial_tuitions', [
+      {
+        id: 't-1',
+        description: 'Mensalidade Julho/2026',
+        dueDate: '2026-07-10',
+        value: 850.00,
+        discount: 50.00,
+        scholarshipPercent: 10,
+        fine: 0,
+        interest: 0,
+        finalValue: 715.00,
+        status: 'PENDENTE',
+        paymentMethod: null,
+        paymentDate: null,
+        studentId: 'aluno-lucas-id',
+        student: {
+          id: 'aluno-lucas-id',
+          user: {
+            email: 'aluno@escola.com',
+            profile: { firstName: 'Lucas', lastName: 'Santos' }
+          }
+        }
+      }
+    ]);
+    const transactions = getStore('financial_transactions', [
+      {
+        id: 'tr-1',
+        type: 'RECEITA',
+        category: 'Mensalidade',
+        description: 'Mensalidade paga - Mariana Oliveira',
+        value: 850.00,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'PIX'
+      }
+    ]);
+
+    const paidTuitions = tuitions.filter((t: any) => t.status === 'PAGO');
+    const pendingTuitions = tuitions.filter((t: any) => t.status === 'PENDENTE');
+    const overdueTuitions = tuitions.filter((t: any) => t.status === 'ATRASADO');
+
+    const totalRevenues = transactions.filter((t: any) => t.type === 'RECEITA').reduce((acc: number, t: any) => acc + t.value, 0);
+    const totalExpenses = transactions.filter((t: any) => t.type === 'DESPESA').reduce((acc: number, t: any) => acc + t.value, 0);
+
+    const paidSum = paidTuitions.reduce((acc: number, t: any) => acc + (t.paidValue || t.finalValue), 0);
+    const pendingSum = pendingTuitions.reduce((acc: number, t: any) => acc + t.finalValue, 0);
+    const overdueSum = overdueTuitions.reduce((acc: number, t: any) => acc + t.finalValue, 0);
+
     return {
       status: 'success',
       data: {
         summary: {
-          totalExpected: 15000,
-          totalCollected: 12000,
-          totalPending: 2000,
-          totalOverdue: 1000,
-          collectionRate: 80.0
-        },
-        overdueList: [
-          { id: 'trans-1', studentName: 'Lucas Santos', value: 850.00, dueDate: '2026-07-10', description: 'Mensalidade Julho' }
-        ],
-        paidList: [
-          { id: 'trans-2', studentName: 'Mariana Oliveira', value: 850.00, dueDate: '2026-07-10', description: 'Mensalidade Julho' }
-        ],
-        pendingList: []
+          totalRevenues,
+          totalExpenses,
+          balance: totalRevenues - totalExpenses,
+          monthRevenue: paidSum,
+          defaultRate: tuitions.length ? (overdueTuitions.length / tuitions.length) * 100 : 0,
+          paidCount: paidTuitions.length,
+          paidSum,
+          pendingCount: pendingTuitions.length,
+          pendingSum,
+          overdueCount: overdueTuitions.length,
+          overdueSum,
+          totalTuitionsCount: tuitions.length
+        }
       }
     };
   }
 
-  if (cleanUrl === '/financial/transactions') {
+  if (cleanUrl === '/financial/tuitions') {
+    const list = getStore('financial_tuitions', [
+      {
+        id: 't-1',
+        description: 'Mensalidade Julho/2026',
+        dueDate: '2026-07-10',
+        value: 850.00,
+        discount: 50.00,
+        scholarshipPercent: 10,
+        fine: 0,
+        interest: 0,
+        finalValue: 715.00,
+        status: 'PENDENTE',
+        paymentMethod: null,
+        paymentDate: null,
+        studentId: 'aluno-lucas-id',
+        student: {
+          id: 'aluno-lucas-id',
+          user: {
+            email: 'aluno@escola.com',
+            profile: { firstName: 'Lucas', lastName: 'Santos' }
+          }
+        }
+      }
+    ]);
     return {
       status: 'success',
-      data: [
-        { id: 't-1', studentName: 'Lucas Santos', value: 850.00, status: 'PAGO', paymentMethod: 'PIX', date: new Date().toISOString() }
-      ]
+      data: {
+        tuitions: list,
+        meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+      }
     };
+  }
+
+  if (cleanUrl.startsWith('/financial/tuitions/')) {
+    const targetId = cleanUrl.split('/').pop();
+    const tuitionsList = getStore('financial_tuitions', []);
+    const idx = tuitionsList.findIndex((t: any) => t.id === targetId);
+    if (idx !== -1 && (methodLower === 'put' || methodLower === 'patch')) {
+      const updated = { ...tuitionsList[idx], ...reqBody };
+      tuitionsList[idx] = updated;
+      setStore('financial_tuitions', tuitionsList);
+      return { status: 'success', data: updated };
+    }
+  }
+
+  if (cleanUrl === '/financial/installments' && methodLower === 'post') {
+    const tuitionsList = getStore('financial_tuitions', []);
+    const { studentId, description, value, firstDueDate, installmentsCount } = reqBody;
+
+    const studentsList = getStore('students', []);
+    const student = studentsList.find((s: any) => s.id === studentId);
+    const studentEmail = student?.user?.email || 'aluno@escola.com';
+    const studentFirstName = student?.user?.profile?.firstName || 'Aluno';
+    const studentLastName = student?.user?.profile?.lastName || '';
+
+    const count = Number(installmentsCount) || 1;
+    const baseVal = Number(value) || 0;
+
+    const newItems = [];
+    const baseDate = new Date(firstDueDate || Date.now());
+
+    for (let i = 0; i < count; i++) {
+      const dueDateStr = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate())
+        .toISOString().split('T')[0];
+      const newId = `t-${Math.random().toString(36).substring(2, 9)}`;
+      const newItem = {
+        id: newId,
+        description: `${description} (${i + 1}/${count})`,
+        dueDate: dueDateStr,
+        value: baseVal,
+        discount: 0,
+        scholarshipPercent: 0,
+        fine: 0,
+        interest: 0,
+        finalValue: baseVal,
+        status: 'PENDENTE',
+        paymentMethod: null,
+        paymentDate: null,
+        studentId,
+        student: {
+          id: studentId,
+          user: {
+            email: studentEmail,
+            profile: { firstName: studentFirstName, lastName: studentLastName }
+          }
+        }
+      };
+      newItems.push(newItem);
+      tuitionsList.push(newItem);
+    }
+    setStore('financial_tuitions', tuitionsList);
+    return { status: 'success', data: newItems };
+  }
+
+  if (cleanUrl.startsWith('/financial/pay/')) {
+    const targetId = cleanUrl.split('/').pop();
+    const tuitionsList = getStore('financial_tuitions', []);
+    const idx = tuitionsList.findIndex((t: any) => t.id === targetId);
+    if (idx !== -1 && methodLower === 'post') {
+      const updated = {
+        ...tuitionsList[idx],
+        status: 'PAGO',
+        paymentMethod: reqBody.paymentMethod || 'PIX',
+        paymentDate: reqBody.paymentDate || new Date().toISOString().split('T')[0],
+        paidValue: Number(reqBody.value) || tuitionsList[idx].finalValue
+      };
+      tuitionsList[idx] = updated;
+      setStore('financial_tuitions', tuitionsList);
+
+      // Add transaction
+      const transactionsList = getStore('financial_transactions', []);
+      transactionsList.push({
+        id: `tr-${Math.random().toString(36).substring(2, 9)}`,
+        type: 'RECEITA',
+        category: 'Mensalidade',
+        description: `Pagamento recebido - ${updated.student.user.profile?.firstName || 'Aluno'} ${updated.student.user.profile?.lastName || ''}`,
+        value: updated.paidValue,
+        date: updated.paymentDate,
+        paymentMethod: updated.paymentMethod
+      });
+      setStore('financial_transactions', transactionsList);
+
+      return { status: 'success', data: updated };
+    }
+  }
+
+  if (cleanUrl === '/financial/transactions') {
+    const list = getStore('financial_transactions', [
+      {
+        id: 'tr-1',
+        type: 'RECEITA',
+        category: 'Mensalidade',
+        description: 'Mensalidade paga - Mariana Oliveira',
+        value: 850.00,
+        date: new Date().toISOString().split('T')[0],
+        paymentMethod: 'PIX'
+      }
+    ]);
+    if (methodLower === 'get') return { status: 'success', data: list };
+    if (methodLower === 'post') {
+      const newId = `tr-${Math.random().toString(36).substring(2, 9)}`;
+      const newItem = {
+        id: newId,
+        type: reqBody.type || 'RECEITA',
+        category: reqBody.category || 'Outros',
+        description: reqBody.description,
+        value: Number(reqBody.value) || 0,
+        date: reqBody.date || new Date().toISOString().split('T')[0],
+        paymentMethod: reqBody.paymentMethod || 'PIX'
+      };
+      list.push(newItem);
+      setStore('financial_transactions', list);
+      return { status: 'success', data: newItem };
+    }
+  }
+
+  if (cleanUrl.startsWith('/financial/transactions/')) {
+    const targetId = cleanUrl.split('/').pop();
+    const list = getStore('financial_transactions', []);
+    if (methodLower === 'delete') {
+      const filtered = list.filter((tr: any) => tr.id !== targetId);
+      setStore('financial_transactions', filtered);
+      return { status: 'success', data: { id: targetId } };
+    }
   }
 
   if (cleanUrl === '/financial/invoices') {
@@ -1913,6 +2118,232 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       setStore('report_cards', list);
       return { status: 'success', data: newItem };
     }
+  }
+
+  if (parts[0] === 'tenants') {
+    const list = getStore('tenants', [
+      { id: 'escola-matriz-default-id', name: 'Escola Matriz Zx', tradeName: 'Zx Escola', cnpj: '12.345.678/0001-90', status: 'ATIVO', planId: 'plan-premium', createdAt: new Date().toISOString() },
+      { id: 'escola-filial-id', name: 'Escola Filial Zx Norte', tradeName: 'Zx Escola Norte', cnpj: '12.345.678/0002-77', status: 'ATIVO', planId: 'plan-basic', createdAt: new Date().toISOString() }
+    ]);
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            tenants: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `tenant-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          name: reqBody.name,
+          tradeName: reqBody.tradeName || reqBody.name,
+          cnpj: reqBody.cnpj || '',
+          status: reqBody.status || 'ATIVO',
+          planId: reqBody.planId || 'plan-basic',
+          createdAt: new Date().toISOString()
+        };
+        list.push(newItem);
+        setStore('tenants', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(t => t.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody };
+          list[idx] = updated;
+          setStore('tenants', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Escola não encontrada' };
+      }
+    }
+  }
+
+  if (parts[0] === 'roles') {
+    const list = getStore('roles', [
+      { id: 'role-admin', name: 'Administrador', description: 'Acesso total ao sistema.', isSystemDefault: true, permissions: JSON.stringify({ library: ['view', 'lend'] }), createdAt: new Date().toISOString() },
+      { id: 'role-diretor', name: 'Diretor', description: 'Direção escolar e acadêmica.', isSystemDefault: true, permissions: JSON.stringify({ library: ['view'] }), createdAt: new Date().toISOString() }
+    ]);
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            roles: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `role-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          name: reqBody.name,
+          description: reqBody.description || '',
+          permissions: typeof reqBody.permissions === 'string' ? reqBody.permissions : JSON.stringify(reqBody.permissions || {}),
+          isSystemDefault: false,
+          createdAt: new Date().toISOString()
+        };
+        list.push(newItem);
+        setStore('roles', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(r => r.id === targetId);
+        if (idx !== -1) {
+          const updated = {
+            ...list[idx],
+            ...reqBody,
+            permissions: typeof reqBody.permissions === 'string' ? reqBody.permissions : JSON.stringify(reqBody.permissions || list[idx].permissions)
+          };
+          list[idx] = updated;
+          setStore('roles', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Perfil não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(r => r.id !== targetId);
+        setStore('roles', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    } else if (parts.length === 3 && parts[2] === 'duplicate') {
+      const targetId = parts[1];
+      if (methodLower === 'post') {
+        const source = list.find(r => r.id === targetId);
+        if (source) {
+          const newId = `role-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = {
+            ...source,
+            id: newId,
+            name: `${source.name} (Cópia)`,
+            isSystemDefault: false,
+            createdAt: new Date().toISOString()
+          };
+          list.push(newItem);
+          setStore('roles', list);
+          return { status: 'success', data: newItem };
+        }
+      }
+    }
+  }
+
+  if (parts[0] === 'plans') {
+    const list = getStore('plans', [
+      { id: 'plan-basic', name: 'Plano Básico', price: 199.90, billingPeriod: 'MENSAL', maxStudents: 150, maxUsers: 10, library: true, financial: false, description: 'Indicado para pequenas escolas.', createdAt: new Date().toISOString() },
+      { id: 'plan-premium', name: 'Plano Premium', price: 499.90, billingPeriod: 'MENSAL', maxStudents: 1000, maxUsers: 50, library: true, financial: true, description: 'Acesso completo a todos os recursos.', createdAt: new Date().toISOString() }
+    ]);
+    if (parts.length === 1) {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: {
+            plans: list,
+            meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
+          }
+        };
+      }
+      if (methodLower === 'post') {
+        const newId = `plan-${Math.random().toString(36).substring(2, 9)}`;
+        const newItem = {
+          id: newId,
+          name: reqBody.name,
+          price: Number(reqBody.price) || 0,
+          billingPeriod: reqBody.billingPeriod || 'MENSAL',
+          maxStudents: Number(reqBody.maxStudents) || 100,
+          maxUsers: Number(reqBody.maxUsers) || 10,
+          library: reqBody.library !== false,
+          financial: reqBody.financial !== false,
+          description: reqBody.description || '',
+          createdAt: new Date().toISOString()
+        };
+        list.push(newItem);
+        setStore('plans', list);
+        return { status: 'success', data: newItem };
+      }
+    } else if (parts.length === 2) {
+      const targetId = parts[1];
+      if (methodLower === 'put' || methodLower === 'patch') {
+        const idx = list.findIndex(p => p.id === targetId);
+        if (idx !== -1) {
+          const updated = { ...list[idx], ...reqBody };
+          list[idx] = updated;
+          setStore('plans', list);
+          return { status: 'success', data: updated };
+        }
+        return { status: 'error', message: 'Plano não encontrado' };
+      }
+      if (methodLower === 'delete') {
+        const filtered = list.filter(p => p.id !== targetId);
+        setStore('plans', filtered);
+        return { status: 'success', data: { id: targetId } };
+      }
+    } else if (parts.length === 3 && parts[2] === 'duplicate') {
+      const targetId = parts[1];
+      if (methodLower === 'post') {
+        const source = list.find(p => p.id === targetId);
+        if (source) {
+          const newId = `plan-${Math.random().toString(36).substring(2, 9)}`;
+          const newItem = {
+            ...source,
+            id: newId,
+            name: `${source.name} (Cópia)`,
+            createdAt: new Date().toISOString()
+          };
+          list.push(newItem);
+          setStore('plans', list);
+          return { status: 'success', data: newItem };
+        }
+      }
+    }
+  }
+
+  if (cleanUrl === '/academic/contents') {
+    const list = getStore('academic_contents', [
+      { id: 'cont-1', title: 'Introdução a Funções de Primeiro Grau', description: 'Definição de funções afins, gráficos e coeficientes.', date: '2026-07-20' }
+    ]);
+    if (methodLower === 'get') return { status: 'success', data: list };
+    if (methodLower === 'post') {
+      const newId = `cont-${Math.random().toString(36).substring(2, 9)}`;
+      const newItem = {
+        id: newId,
+        title: reqBody.title,
+        description: reqBody.description || '',
+        date: reqBody.date || new Date().toISOString().split('T')[0]
+      };
+      list.push(newItem);
+      setStore('academic_contents', list);
+      return { status: 'success', data: newItem };
+    }
+  }
+
+  if (cleanUrl === '/academic/attendance') {
+    const list = getStore('academic_attendance', []);
+    if (methodLower === 'get') return { status: 'success', data: list };
+    if (methodLower === 'post') {
+      const newId = `att-${Math.random().toString(36).substring(2, 9)}`;
+      const newItem = {
+        id: newId,
+        classId: reqBody.classId,
+        date: reqBody.date || new Date().toISOString().split('T')[0],
+        records: reqBody.records || []
+      };
+      list.push(newItem);
+      setStore('academic_attendance', list);
+      return { status: 'success', data: newItem };
+    }
+  }
+
+  if (cleanUrl.endsWith('/upload')) {
+    return { status: 'success', data: { fileUrl: 'https://zx-escola.vercel.app/simulated-file.pdf' } };
   }
 
   return { status: 'success', data: null };
