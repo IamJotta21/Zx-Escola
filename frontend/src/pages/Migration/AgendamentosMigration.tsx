@@ -33,11 +33,14 @@ export const AgendamentosMigration: React.FC = () => {
   const [schedules, setSchedules] = useState<ScheduledJob[]>([]);
   const [importModels, setImportModels] = useState<ImportModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const safeSchedules = schedules || [];
+  const safeImportModels = importModels || [];
 
   // Executions Panel State
   const [selectedJob, setSelectedJob] = useState<ScheduledJob | null>(null);
   const [executions, setExecutions] = useState<JobExecution[]>([]);
   const [loadingExecutions, setLoadingExecutions] = useState(false);
+  const safeExecutions = executions || [];
 
   // Form Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -74,7 +77,7 @@ export const AgendamentosMigration: React.FC = () => {
     try {
       const data = await migrationService.getImportModels();
       setImportModels(data);
-      if (data.length > 0) setSelectedImportModel(data[0].id);
+      if (data && data.length > 0) setSelectedImportModel(data[0].id);
     } catch {
       // Ignore
     }
@@ -243,7 +246,7 @@ export const AgendamentosMigration: React.FC = () => {
             <div className="flex items-center justify-center py-20 text-xs text-muted-foreground">
               <Spinner size="md" /> Carregando agendamentos...
             </div>
-          ) : schedules.length === 0 ? (
+          ) : safeSchedules.length === 0 ? (
             <Card className="border-border/60">
               <CardContent className="p-10 text-center">
                 <FolderSync className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -254,7 +257,7 @@ export const AgendamentosMigration: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            schedules.map((j) => (
+            safeSchedules.map((j) => (
               <Card
                 key={j.id}
                 className={`border-border/60 hover:shadow-xs transition-shadow cursor-pointer ${
@@ -368,13 +371,13 @@ export const AgendamentosMigration: React.FC = () => {
                 <div className="text-xs text-muted-foreground text-center py-10">
                   Nenhum agendamento selecionado.
                 </div>
-              ) : executions.length === 0 ? (
+              ) : safeExecutions.length === 0 ? (
                 <div className="text-xs text-muted-foreground text-center py-10">
                   Nenhuma execução registrada para este agendamento.
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
-                  {executions.map((e) => (
+                  {safeExecutions.map((e) => (
                     <div key={e.id} className="p-3 rounded-xl border bg-card text-xs space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[10px] text-muted-foreground">
@@ -468,7 +471,7 @@ export const AgendamentosMigration: React.FC = () => {
                 label="Modelo de Mapeamento"
                 value={selectedImportModel}
                 onChange={(e) => setSelectedImportModel(e.target.value)}
-                options={importModels.map((m) => ({
+                options={safeImportModels.map((m) => ({
                   value: m.id,
                   label: `${m.name} (${m.targetEntity})`,
                 }))}
