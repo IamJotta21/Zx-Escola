@@ -37,7 +37,7 @@ export const DashboardImportacao: React.FC = () => {
   const successRate =
     stats && stats.totalRows > 0 ? Math.round((stats.successRows / stats.totalRows) * 100) : 0;
 
-  const lastImport = imports[0];
+  const lastImport = (imports || [])[0];
   const lastImportDate = lastImport ? new Date(lastImport.createdAt).toLocaleString('pt-BR') : '—';
 
   const handleReprocess = (id: string) => {
@@ -303,7 +303,7 @@ export const DashboardImportacao: React.FC = () => {
         </CardHeader>
         <CardContent>
           <ImportHistoryTable
-            imports={imports.slice(0, 5)}
+            imports={(imports || []).slice(0, 5)}
             loading={loading}
             onViewDetails={(id) => navigate(`/importacao-inteligente/historico?id=${id}`)}
             onReprocess={handleReprocess}
