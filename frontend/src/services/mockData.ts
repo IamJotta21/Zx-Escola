@@ -1811,7 +1811,10 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
           overdueCount: overdueTuitions.length,
           overdueSum,
           totalTuitionsCount: tuitions.length
-        }
+        },
+        overdueList: overdueTuitions,
+        paidList: paidTuitions,
+        pendingList: pendingTuitions
       }
     };
   }
@@ -1843,10 +1846,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
     ]);
     return {
       status: 'success',
-      data: {
-        tuitions: list,
-        meta: { total: list.length, page: 1, limit: 100, totalPages: 1 }
-      }
+      data: list
     };
   }
 

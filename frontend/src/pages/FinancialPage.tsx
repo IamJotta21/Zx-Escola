@@ -228,7 +228,8 @@ export const FinancialPage: React.FC = () => {
   const fetchTransactions = useCallback(async () => {
     try {
       const res = await api.get('/financial/transactions');
-      setTransactions(res.data.data || []);
+      const data = res.data?.data;
+      setTransactions(Array.isArray(data) ? data : (data?.transactions || []));
     } catch {
       /* silent */
     }
@@ -245,7 +246,8 @@ export const FinancialPage: React.FC = () => {
       if (filterEndDate) params.endDate = filterEndDate;
 
       const res = await api.get('/financial/tuitions', { params });
-      setTuitions(res.data.data || []);
+      const data = res.data?.data;
+      setTuitions(Array.isArray(data) ? data : (data?.tuitions || []));
     } catch {
       addToast({ type: 'error', message: 'Erro ao filtrar mensalidades.' });
     } finally {
