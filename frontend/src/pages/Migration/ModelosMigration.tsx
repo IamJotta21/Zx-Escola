@@ -32,6 +32,8 @@ export const ModelosMigration: React.FC = () => {
   const [importModels, setImportModels] = useState<ImportModel[]>([]);
   const [exportModels, setExportModels] = useState<ExportModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const safeImportModels = importModels || [];
+  const safeExportModels = exportModels || [];
 
   // Drawer / Form State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -288,7 +290,7 @@ export const ModelosMigration: React.FC = () => {
         </div>
       ) : activeTab === 'import' ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {importModels.map((m) => (
+          {safeImportModels.map((m) => (
             <Card key={m.id} className="border-border/60 hover:shadow-xs transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
@@ -354,7 +356,7 @@ export const ModelosMigration: React.FC = () => {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {exportModels.map((m) => (
+          {safeExportModels.map((m) => (
             <Card key={m.id} className="border-border/60 hover:shadow-xs transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
