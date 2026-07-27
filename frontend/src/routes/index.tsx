@@ -2668,7 +2668,7 @@ const StudentsPage: React.FC = () => {
 
 // 5. SETTINGS PAGE (With Profile Editing and Password Change)
 const SettingsPage: React.FC = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, updateTenantBranding } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
 
@@ -2684,6 +2684,12 @@ const SettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // School customization state
+  const [schoolName, setSchoolName] = useState('');
+  const [logoUrlInput, setLogoUrlInput] = useState('');
+  const [schoolLoading, setSchoolLoading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
   // Sync profile details on start
   useEffect(() => {
     async function fetchProfile() {
@@ -2697,8 +2703,83 @@ const SettingsPage: React.FC = () => {
         // Ignora silenciosamente se o perfil não puder ser obtido no boot
       }
     }
+    async function fetchSchoolDetails() {
+      if (['ADMIN', 'DIRETOR'].includes(user?.role || '')) {
+        try {
+          const res = await api.get('/tenants/current');
+          if (res.data.status === 'success') {
+            setSchoolName(res.data.data.name || '');
+            setLogoUrlInput(res.data.data.logoUrl || '');
+          }
+        } catch {
+          // silent
+        }
+      }
+    }
     fetchProfile();
-  }, []);
+    fetchSchoolDetails();
+  }, [user]);
+
+  const handleUpdateSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolName) {
+      addToast({ type: 'warning', message: 'O nome da escola é obrigatório.' });
+      return;
+    }
+    setSchoolLoading(true);
+    try {
+      const res = await api.put(`/tenants/${user?.tenantId}`, {
+        name: schoolName,
+        logoUrl: logoUrlInput || null,
+      });
+      if (res.data.status === 'success') {
+        const updatedTenant = res.data.data;
+        updateTenantBranding(updatedTenant.name, updatedTenant.logoUrl || '');
+        addToast({
+          type: 'success',
+          title: 'Configurações Salvas',
+          message: 'Identidade visual da escola atualizada com sucesso!',
+        });
+      }
+    } catch (err) {
+      addToast({ type: 'error', message: 'Erro ao atualizar identidade visual.' });
+    } finally {
+      setSchoolLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowed.includes(file.type)) {
+      addToast({ type: 'warning', message: 'Envie apenas imagens (PNG, JPG, JPEG).' });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingLogo(true);
+    try {
+      const res = await api.post(`/tenants/${user?.tenantId}/logo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (res.data.status === 'success') {
+        const newLogoUrl = res.data.data.logoUrl;
+        setLogoUrlInput(newLogoUrl);
+        updateTenantBranding(schoolName, newLogoUrl);
+        addToast({ type: 'success', message: 'Logo enviada e salva com sucesso!' });
+      }
+    } catch {
+      addToast({ type: 'error', message: 'Erro ao enviar imagem do logo.' });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2914,6 +2995,101 @@ const SettingsPage: React.FC = () => {
             </form>
           </Card>
         </div>
+
+        {/* School Customization Card (Only for ADMIN/DIRETOR) */}
+        {['ADMIN', 'DIRETOR'].includes(user?.role || '') && (
+          <Card className="stripe-card md:col-span-3">
+            <form onSubmit={handleUpdateSchool}>
+              <CardHeader>
+                <CardTitle>Personalização da Escola</CardTitle>
+                <CardDescription>
+                  Personalize a marca da sua escola (logo e nome comercial) visível para todos os usuários.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Left Column: Form Inputs */}
+                  <div className="space-y-4">
+                    <Input
+                      label="Nome da Escola / Marca"
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                      placeholder="Ex: Colégio Zx-Escola Filial"
+                      required
+                    />
+
+                    <div>
+                      <label className="text-xs font-bold text-foreground block mb-1">
+                        URL do Logotipo da Escola
+                      </label>
+                      <Input
+                        value={logoUrlInput}
+                        onChange={(e) => setLogoUrlInput(e.target.value)}
+                        placeholder="https://exemplo.com/logo.png"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-foreground block mb-1">
+                        Enviar Arquivo de Imagem (Logo)
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 justify-center border border-dashed border-input hover:bg-muted/30 transition-all rounded-lg p-2 px-4 cursor-pointer text-xs font-bold text-muted-foreground bg-card">
+                          <Upload className="h-4 w-4 text-primary" />
+                          <span>{uploadingLogo ? 'Enviando...' : 'Selecionar Imagem'}</span>
+                          <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/jpg"
+                            className="hidden"
+                            onChange={handleLogoUpload}
+                            disabled={uploadingLogo}
+                          />
+                        </label>
+                        {uploadingLogo && <Spinner size="sm" />}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block mt-1">
+                        Formatos permitidos: PNG, JPG, JPEG (Tamanho máx: 10MB)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Visual Preview */}
+                  <div className="flex flex-col items-center justify-center p-6 border border-border/80 rounded-2xl bg-secondary/20 relative min-h-[200px]">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest absolute top-3 left-4 select-none">
+                      Visualização Prévia
+                    </span>
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      {logoUrlInput ? (
+                        <img
+                          src={logoUrlInput.startsWith('http') || logoUrlInput.startsWith('data:') ? logoUrlInput : `${import.meta.env.VITE_API_URL || ''}${logoUrlInput}`}
+                          alt="Logo Preview"
+                          className="w-24 h-24 object-contain rounded-xl shadow-md border border-border/40 bg-card p-2"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-xl border border-dashed border-input flex items-center justify-center text-muted-foreground text-xs bg-card select-none">
+                          Sem Logo
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-sm font-extrabold text-foreground">
+                          {schoolName || 'Nome da Escola'}
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          Contexto ativo no link de acesso
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="justify-end">
+                <Button type="submit" isLoading={schoolLoading}>
+                  Atualizar Identidade Visual
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        )}
       </div>
     </div>
   );

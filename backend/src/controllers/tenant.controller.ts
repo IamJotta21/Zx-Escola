@@ -208,6 +208,11 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ status: 'error', message: 'Tenant não encontrado' });
     }
 
+    // Verify tenant ownership / authorization
+    if (req.user?.role !== 'SUPER_ADMIN' && id !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: você não tem permissão para alterar este inquilino' });
+    }
+
     if (body.email && !isValidEmail(body.email)) {
       return res.status(400).json({ status: 'error', message: 'E-mail de contato inválido' });
     }
@@ -268,9 +273,72 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const uploadTenantLogo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ status: 'error', message: 'Nenhum arquivo enviado' });
+    }
+
+    const existing = await prisma.tenant.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Tenant não encontrado' });
+    }
+
+    // Verify tenant ownership
+    if (req.user?.role !== 'SUPER_ADMIN' && id !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: você não tem permissão para alterar este inquilino' });
+    }
+
+    const logoUrl = `/uploads/${file.filename}`;
+
+    const updated = await prisma.tenant.update({
+      where: { id },
+      data: { logoUrl },
+    });
+
+    return res.json({
+      status: 'success',
+      data: {
+        logoUrl: updated.logoUrl,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getPublicTenantInfo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const tenant = await prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        primaryColor: true,
+        secondaryColor: true,
+      },
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ status: 'error', message: 'Escola não encontrada' });
+    }
+
+    return res.json({ status: 'success', data: tenant });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export default {
   listTenants,
   getCurrentTenant,
   createTenant,
   updateTenant,
+  uploadTenantLogo,
+  getPublicTenantInfo,
 };

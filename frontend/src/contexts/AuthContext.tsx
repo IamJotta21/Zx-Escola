@@ -21,6 +21,9 @@ interface AuthContextData {
   isLoading: boolean;
   isSupportMode: boolean;
   supportTenant: { id: string; name: string } | null;
+  tenantName: string;
+  tenantLogoUrl: string;
+  updateTenantBranding: (name: string, logoUrl: string) => void;
   signIn: (accessToken: string, refreshToken: string, user: User) => void;
   signOut: () => void;
   updateUser: (user: User) => void;
@@ -37,6 +40,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const saved = localStorage.getItem('@ZxEscola:supportTenant');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
+  const [tenantName, setTenantName] = useState<string>(() => {
+    return localStorage.getItem('@ZxEscola:tenantName') || 'Zx-Escola';
+  });
+  const [tenantLogoUrl, setTenantLogoUrl] = useState<string>(() => {
+    return localStorage.getItem('@ZxEscola:tenantLogoUrl') || '';
+  });
+
+  const updateTenantBranding = (name: string, logoUrl: string) => {
+    setTenantName(name);
+    setTenantLogoUrl(logoUrl);
+    localStorage.setItem('@ZxEscola:tenantName', name);
+    localStorage.setItem('@ZxEscola:tenantLogoUrl', logoUrl);
+  };
 
   const signOut = () => {
     const refreshToken = localStorage.getItem('@ZxEscola:refreshToken');
@@ -49,7 +65,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('@ZxEscola:superAdminMasterToken');
     localStorage.removeItem('@ZxEscola:superAdminMasterUser');
     localStorage.removeItem('@ZxEscola:supportTenant');
+    localStorage.removeItem('@ZxEscola:tenantName');
+    localStorage.removeItem('@ZxEscola:tenantLogoUrl');
+    localStorage.removeItem('@ZxEscola:urlTenantId');
     setSupportTenant(null);
+    setTenantName('Zx-Escola');
+    setTenantLogoUrl('');
     setUser(null);
   };
 
@@ -101,6 +122,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     async function loadStorageData() {
+      // 1. Sync URL parameter-based branding
+      const queryParams = new URLSearchParams(window.location.search);
+      const urlTenantId = queryParams.get('tenantId') || queryParams.get('tenant');
+      if (urlTenantId) {
+        localStorage.setItem('@ZxEscola:urlTenantId', urlTenantId);
+      }
+
+      const resolvedTenantId = urlTenantId || localStorage.getItem('@ZxEscola:urlTenantId');
+      if (resolvedTenantId) {
+        try {
+          const res = await api.get(`/tenants/${resolvedTenantId}/public`);
+          if (res.data.status === 'success') {
+            const { name, logoUrl } = res.data.data;
+            setTenantName(name);
+            setTenantLogoUrl(logoUrl || '');
+            localStorage.setItem('@ZxEscola:tenantName', name);
+            localStorage.setItem('@ZxEscola:tenantLogoUrl', logoUrl || '');
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const storedUser = localStorage.getItem('@ZxEscola:user');
       const storedToken = localStorage.getItem('@ZxEscola:accessToken');
 
@@ -135,6 +179,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
             localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));
             setUser(userData);
+
+            // Fetch tenant visual customization settings
+            try {
+              const tenantRes = await api.get('/tenants/current');
+              if (tenantRes.data.status === 'success') {
+                const { name, logoUrl } = tenantRes.data.data;
+                setTenantName(name);
+                setTenantLogoUrl(logoUrl || '');
+                localStorage.setItem('@ZxEscola:tenantName', name);
+                localStorage.setItem('@ZxEscola:tenantLogoUrl', logoUrl || '');
+              }
+            } catch {
+              // ignore
+            }
           }
         } catch (error) {
           // Backend unreachable – keep the locally-stored user if it exists
@@ -172,6 +230,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('@ZxEscola:refreshToken', refreshToken);
     localStorage.setItem('@ZxEscola:user', JSON.stringify(userData));
     setUser(userData);
+
+    // Sync tenant visual settings right after sign-in
+    api.get('/tenants/current')
+      .then((res) => {
+        if (res.data.status === 'success') {
+          const { name, logoUrl } = res.data.data;
+          setTenantName(name);
+          setTenantLogoUrl(logoUrl || '');
+          localStorage.setItem('@ZxEscola:tenantName', name);
+          localStorage.setItem('@ZxEscola:tenantLogoUrl', logoUrl || '');
+        }
+      })
+      .catch(() => {});
   };
 
   const updateUser = (updatedUser: User) => {
@@ -189,6 +260,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         isSupportMode,
         supportTenant,
+        tenantName,
+        tenantLogoUrl,
+        updateTenantBranding,
         signIn,
         signOut,
         updateUser,

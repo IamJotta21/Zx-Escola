@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -7,12 +8,39 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ size = 'md', className = '', showText = false }) => {
+  const { tenantName, tenantLogoUrl } = useAuth();
+
   const dimensions = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
     lg: 'w-16 h-16',
     xl: 'w-24 h-24',
   }[size];
+
+  if (tenantLogoUrl) {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const fullLogoUrl = tenantLogoUrl.startsWith('http') || tenantLogoUrl.startsWith('data:')
+      ? tenantLogoUrl
+      : `${apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase}${tenantLogoUrl}`;
+
+    return (
+      <div className={`inline-flex items-center gap-3 select-none ${className}`}>
+        <img
+          src={fullLogoUrl}
+          alt={tenantName || 'Logo da Escola'}
+          className={`${dimensions} object-contain rounded-xl shadow-sm border border-border/40 bg-card`}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        {showText && (
+          <span className="font-sans font-extrabold text-sm tracking-tight text-foreground truncate max-w-[160px]">
+            {tenantName}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
