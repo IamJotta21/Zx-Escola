@@ -29,7 +29,11 @@ export const ensureDefaultTenant = async () => {
     const superAdminEmail = 'superadmin@zxescola.com.br';
     const existingAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } });
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash('123456', 10);
+      const defaultPassword = process.env.SUPERADMIN_PASSWORD || 'SuperAdminZxEscola2026!';
+      if (!process.env.SUPERADMIN_PASSWORD) {
+        console.warn('[SECURITY WARNING] SUPERADMIN_PASSWORD environment variable not set. Using secure default fallback.');
+      }
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
       await prisma.user.create({
         data: {
           email: superAdminEmail,

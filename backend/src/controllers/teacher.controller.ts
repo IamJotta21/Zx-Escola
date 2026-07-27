@@ -29,12 +29,14 @@ export const createTeacher = async (req: Request, res: Response, next: NextFunct
     const defaultPassword = await bcrypt.hash('123456', 10);
 
     const result = await prisma.$transaction(async (tx) => {
+      const tenantId = req.tenantId || 'escola-matriz-default-id';
       const user = await tx.user.create({
         data: {
           email,
           password: defaultPassword,
           role: 'TEACHER',
           isActive: true,
+          tenantId,
           profile: {
             create: {
               firstName,
@@ -44,6 +46,7 @@ export const createTeacher = async (req: Request, res: Response, next: NextFunct
           },
           teacherProfile: {
             create: {
+              tenantId,
               subjects: subjects || null,
               workload: workload ? parseInt(workload.toString()) : 20,
               schedule: schedule || null,
@@ -76,6 +79,11 @@ export const updateTeacher = async (req: Request, res: Response, next: NextFunct
 
     if (!teacher) {
       return res.status(404).json({ status: 'error', message: 'Professor não encontrado' });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && teacher.tenantId && teacher.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Professor pertence a outra escola' });
     }
 
     if (email && !isValidEmail(email)) {
@@ -142,6 +150,11 @@ export const deleteTeacher = async (req: Request, res: Response, next: NextFunct
       return res.status(404).json({ status: 'error', message: 'Professor não encontrado' });
     }
 
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && teacher.tenantId && teacher.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Professor pertence a outra escola' });
+    }
+
     // Deleting the associated User cascades deletion to Teacher, Profile, etc.
     await prisma.user.delete({
       where: { id: teacher.userId },
@@ -167,9 +180,14 @@ export const listTeachers = async (req: Request, res: Response, next: NextFuncti
 
     const where: any = {};
 
+    // Enforce tenant filter
+    const tenantFilter = req.tenantId
+      ? { OR: [{ tenantId: req.tenantId }, { tenantId: null }] }
+      : { tenantId: 'escola-matriz-default-id' };
+
     if (search) {
       const searchStr = search as string;
-      where.OR = [
+      const searchOR = [
         { subjects: { contains: searchStr } },
         {
           user: {
@@ -187,6 +205,15 @@ export const listTeachers = async (req: Request, res: Response, next: NextFuncti
           },
         },
       ];
+
+      where.AND = [
+        tenantFilter,
+        { OR: searchOR }
+      ];
+    } else {
+      if (req.tenantId) {
+        where.OR = [{ tenantId: req.tenantId }, { tenantId: null }];
+      }
     }
 
     const [total, teachers] = await prisma.$transaction([
@@ -249,6 +276,11 @@ export const getTeacher = async (req: Request, res: Response, next: NextFunction
 
     if (!teacher) {
       return res.status(404).json({ status: 'error', message: 'Professor não encontrado' });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && teacher.tenantId && teacher.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Professor pertence a outra escola' });
     }
 
     return res.status(200).json({

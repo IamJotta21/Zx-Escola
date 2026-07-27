@@ -187,10 +187,10 @@ export const PlansPage: React.FC = () => {
     setEditingPlan(plan);
     setFormName(plan.name);
     setFormDesc(plan.description || '');
-    setFormMonthlyPrice(plan.monthlyPrice.toString());
-    setFormYearlyPrice(plan.yearlyPrice.toString());
-    setFormTrialDays(plan.trialDays.toString());
-    setFormSortOrder(plan.sortOrder.toString());
+    setFormMonthlyPrice(plan.monthlyPrice !== null && plan.monthlyPrice !== undefined ? plan.monthlyPrice.toString() : '0');
+    setFormYearlyPrice(plan.yearlyPrice !== null && plan.yearlyPrice !== undefined ? plan.yearlyPrice.toString() : '0');
+    setFormTrialDays(plan.trialDays !== null && plan.trialDays !== undefined ? plan.trialDays.toString() : '0');
+    setFormSortOrder(plan.sortOrder !== null && plan.sortOrder !== undefined ? plan.sortOrder.toString() : '1');
 
     setLimitStudents(plan.maxStudents !== null && plan.maxStudents !== undefined ? plan.maxStudents.toString() : '');
     setLimitTeachers(plan.maxTeachers !== null && plan.maxTeachers !== undefined ? plan.maxTeachers.toString() : '');
@@ -389,7 +389,7 @@ export const PlansPage: React.FC = () => {
                   {/* Trial Days */}
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-amber-500" /> Período de Teste:{' '}
-                    <strong className="text-foreground">{plan.trialDays} dias grátis</strong>
+                    <strong className="text-foreground">{(plan.trialDays ?? 0)} dias grátis</strong>
                   </div>
                 </CardContent>
               </div>

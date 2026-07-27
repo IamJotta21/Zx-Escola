@@ -27,7 +27,7 @@ import tenantRoutes from './routes/tenant.routes';
 import superadminRoutes from './routes/superadmin.routes';
 import planRoutes from './routes/plan.routes';
 import roleRoutes from './routes/role.routes';
-import { ensureDefaultTenant } from './middlewares/tenant.middleware';
+import { ensureDefaultTenant, enforceTenant } from './middlewares/tenant.middleware';
 import ImportRoutes from './routes/ImportRoutes';
 import ExportRoutes from './routes/ExportRoutes';
 import MigrationRoutes from './routes/MigrationRoutes';
@@ -82,6 +82,7 @@ app.get('/health', (_req, res) => {
 
 // Root API Router placeholder
 const apiRouter = express.Router();
+apiRouter.use(enforceTenant);
 
 // Register auth router
 apiRouter.use('/auth', authRoutes);

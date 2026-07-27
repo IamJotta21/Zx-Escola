@@ -25,9 +25,26 @@ export class ZipParser implements IParser {
     let maxCols = 0;
 
     try {
-      // Decompress ZIP using adm-zip
+      // Decompress ZIP using adm-zip with Zip Slip path traversal mitigation
       const zip = new AdmZip(filePath);
-      zip.extractAllTo(tempExtractDir, true);
+      const zipEntries = zip.getEntries();
+      const resolvedTempDir = path.resolve(tempExtractDir);
+
+      for (const entry of zipEntries) {
+        const targetPath = path.resolve(resolvedTempDir, entry.entryName);
+        
+        // Ensure the entry path stays within the temporary extraction directory
+        if (!targetPath.startsWith(resolvedTempDir + path.sep) && targetPath !== resolvedTempDir) {
+          throw new Error(`Caminho de extração inválido detectado no arquivo ZIP (Zip Slip): ${entry.entryName}`);
+        }
+
+        if (entry.isDirectory) {
+          fs.mkdirSync(targetPath, { recursive: true });
+        } else {
+          fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+          fs.writeFileSync(targetPath, entry.getData());
+        }
+      }
 
       // Recursive scan helper
       const scanDir = async (dir: string) => {

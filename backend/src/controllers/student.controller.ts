@@ -176,6 +176,11 @@ export const updateStudent = async (req: Request, res: Response, next: NextFunct
       return res.status(404).json({ status: 'error', message: 'Aluno não encontrado' });
     }
 
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && student.tenantId && student.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Aluno pertence a outra escola' });
+    }
+
     if (email && !isValidEmail(email)) {
       return res.status(400).json({ status: 'error', message: 'Formato de e-mail inválido' });
     }
@@ -284,6 +289,11 @@ export const deleteStudent = async (req: Request, res: Response, next: NextFunct
       return res.status(404).json({ status: 'error', message: 'Aluno não encontrado' });
     }
 
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && student.tenantId && student.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Aluno pertence a outra escola' });
+    }
+
     // Deleting the associated User will cascade delete the Profile, Student profile, RefreshTokens, etc.
     await prisma.user.delete({
       where: { id: student.userId },
@@ -312,16 +322,17 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
       user: {},
     };
 
-    if (req.tenantId) {
-      where.OR = [{ tenantId: req.tenantId }, { tenantId: null }];
-    }
+    // Strict tenant isolation filter
+    const tenantFilter = req.tenantId
+      ? { OR: [{ tenantId: req.tenantId }, { tenantId: null }] }
+      : { tenantId: 'escola-matriz-default-id' };
 
     // Text Search in FirstName, LastName, CPF, RG, E-mail, Registration Number (Case-Insensitive)
     if (search) {
       const searchStr = (search as string).trim();
       const terms = searchStr.split(/\s+/).filter(Boolean);
 
-      where.OR = [
+      const searchOR = [
         { cpf: { contains: searchStr, mode: 'insensitive' } },
         { rg: { contains: searchStr, mode: 'insensitive' } },
         {
@@ -343,7 +354,7 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
 
       // If user typed multiple search terms (e.g., "Ana Silva"), match both across profile first/last names
       if (terms.length > 1) {
-        where.OR.push({
+        searchOR.push({
           user: {
             profile: {
               AND: terms.map((t) => ({
@@ -354,7 +365,16 @@ export const listStudents = async (req: Request, res: Response, next: NextFuncti
               })),
             },
           },
-        });
+        } as any);
+      }
+
+      where.AND = [
+        tenantFilter,
+        { OR: searchOR }
+      ];
+    } else {
+      if (req.tenantId) {
+        where.OR = [{ tenantId: req.tenantId }, { tenantId: null }];
       }
     }
 
@@ -444,6 +464,11 @@ export const getStudent = async (req: Request, res: Response, next: NextFunction
 
     if (!student) {
       return res.status(404).json({ status: 'error', message: 'Aluno não encontrado' });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN' && student.tenantId && student.tenantId !== req.tenantId) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: Aluno pertence a outra escola' });
     }
 
     return res.status(200).json({

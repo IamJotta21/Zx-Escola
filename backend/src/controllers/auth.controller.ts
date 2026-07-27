@@ -19,25 +19,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       include: { profile: true },
     });
 
-    // Fallback: If superadmin email is provided and user does not exist, auto-create SuperAdmin account
-    if (!user && (email.toLowerCase().includes('superadmin') || email.toLowerCase() === 'admin@zxescola.com.br')) {
-      const hashedPassword = await bcrypt.hash(password || '123456', 10);
-      user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          role: 'SUPER_ADMIN',
-          isActive: true,
-          profile: {
-            create: {
-              firstName: 'Super',
-              lastName: 'Administrador SaaS',
-            },
-          },
-        },
-        include: { profile: true },
-      });
-    }
+
 
     // Fallback: If user is not found, check if a Guardian exists with this email
     if (!user) {
@@ -261,14 +243,15 @@ export const recoverPassword = async (req: Request, res: Response, next: NextFun
       },
     });
 
-    // In a real app we send email. Here we return the token in response to facilitate mock/tests.
+    // Log the token in the server console for testing/development
+    console.log(`[SECURITY] Token de recuperação para ${email}: ${recoveryToken}`);
+
     return res.status(200).json({
       status: 'success',
-      message: 'Token de recuperação gerado com sucesso',
+      message: 'Instruções de recuperação enviadas para o e-mail cadastrado.',
       data: {
-        recoveryToken,
         instructions:
-          'Envie um POST para /api/auth/reset-password com este token e newPassword para redefinir.',
+          'Se o e-mail informado existir no sistema, as instruções de recuperação foram enviadas.',
       },
     });
   } catch (error) {

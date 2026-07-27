@@ -37,8 +37,14 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as UserPayload;
     req.user = decoded;
-    // Extract tenantId from JWT payload or fallback to header if present
-    req.tenantId = decoded.tenantId || (req.headers['x-tenant-id'] as string) || null;
+    
+    // Restrict tenant override via headers to SUPER_ADMIN only
+    if (decoded.role === 'SUPER_ADMIN') {
+      req.tenantId = (req.headers['x-tenant-id'] as string) || decoded.tenantId || null;
+    } else {
+      req.tenantId = decoded.tenantId || null;
+    }
+    
     return next();
   } catch (error) {
     return res.status(401).json({

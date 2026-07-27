@@ -77,6 +77,14 @@ export const updateImportModel = async (req: Request, res: Response, next: NextF
     const { id } = req.params;
     const { name, description, targetEntity, mapping, originSystem, isShared } = req.body;
 
+    const existing = await prisma.importModel.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Modelo não encontrado.' });
+    }
+    if (req.user?.role !== 'SUPER_ADMIN' && existing.userId !== req.user?.id) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: você não é proprietário deste modelo.' });
+    }
+
     const model = await prisma.importModel.update({
       where: { id },
       data: {
@@ -138,6 +146,15 @@ export const duplicateImportModel = async (req: Request, res: Response, next: Ne
 export const deleteImportModel = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+
+    const existing = await prisma.importModel.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Modelo não encontrado.' });
+    }
+    if (req.user?.role !== 'SUPER_ADMIN' && existing.userId !== req.user?.id) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: você não é proprietário deste modelo.' });
+    }
+
     const model = await prisma.importModel.delete({ where: { id } });
 
     await logAudit(
@@ -156,6 +173,14 @@ export const shareImportModel = async (req: Request, res: Response, next: NextFu
   try {
     const { id } = req.params;
     const { isShared } = req.body;
+
+    const existing = await prisma.importModel.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Modelo não encontrado.' });
+    }
+    if (req.user?.role !== 'SUPER_ADMIN' && existing.userId !== req.user?.id) {
+      return res.status(403).json({ status: 'error', message: 'Acesso negado: você não é proprietário deste modelo.' });
+    }
 
     const model = await prisma.importModel.update({
       where: { id },
@@ -493,6 +518,28 @@ export const publicImport = async (req: Request, res: Response, next: NextFuncti
       });
     }
 
+    // Verify file and model access
+    const [fileRecord, modelRecord] = await Promise.all([
+      prisma.uploadedFile.findUnique({ where: { id: fileId }, include: { user: true } }),
+      prisma.importModel.findUnique({ where: { id: modelId } }),
+    ]);
+
+    if (!fileRecord) {
+      return res.status(404).json({ status: 'error', message: 'Arquivo de importação não encontrado.' });
+    }
+    if (!modelRecord) {
+      return res.status(404).json({ status: 'error', message: 'Modelo de importação não encontrado.' });
+    }
+
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      if (fileRecord.userId !== req.user?.id && fileRecord.user?.tenantId !== req.tenantId) {
+        return res.status(403).json({ status: 'error', message: 'Acesso negado ao arquivo.' });
+      }
+      if (modelRecord.userId !== req.user?.id && !modelRecord.isShared) {
+        return res.status(403).json({ status: 'error', message: 'Acesso negado ao modelo.' });
+      }
+    }
+
     const importRecord = await prisma.import.create({
       data: {
         fileId,
@@ -586,6 +633,7 @@ export const publicImportStatus = async (req: Request, res: Response, next: Next
     const importRecord = await prisma.import.findUnique({
       where: { id: importId },
       include: {
+        user: true,
         logs: { orderBy: { createdAt: 'asc' } },
         history: { orderBy: { createdAt: 'asc' } },
       },
@@ -596,6 +644,13 @@ export const publicImportStatus = async (req: Request, res: Response, next: Next
         status: 'error',
         message: 'Importação não encontrada.',
       });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      if (importRecord.userId !== req.user?.id && importRecord.user?.tenantId !== req.tenantId) {
+        return res.status(403).json({ status: 'error', message: 'Acesso negado' });
+      }
     }
 
     return res.status(200).json({
@@ -673,6 +728,7 @@ export const publicExportStatus = async (req: Request, res: Response, next: Next
     const exportRecord = await prisma.export.findUnique({
       where: { id: exportId },
       include: {
+        user: true,
         history: { orderBy: { createdAt: 'asc' } },
       },
     });
@@ -682,6 +738,13 @@ export const publicExportStatus = async (req: Request, res: Response, next: Next
         status: 'error',
         message: 'Exportação não encontrada.',
       });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      if (exportRecord.userId !== req.user?.id && exportRecord.user?.tenantId !== req.tenantId) {
+        return res.status(403).json({ status: 'error', message: 'Acesso negado' });
+      }
     }
 
     return res.status(200).json({
@@ -716,13 +779,23 @@ export const publicExportDownload = async (req: Request, res: Response, next: Ne
       });
     }
 
-    const exportRecord = await prisma.export.findUnique({ where: { id: exportId } });
+    const exportRecord = await prisma.export.findUnique({
+      where: { id: exportId },
+      include: { user: true },
+    });
 
     if (!exportRecord || exportRecord.status !== 'COMPLETED' || !exportRecord.filePath) {
       return res.status(404).json({
         status: 'error',
         message: 'Arquivo de exportação não encontrado ou ainda em processamento.',
       });
+    }
+
+    // Verify tenant access
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      if (exportRecord.userId !== req.user?.id && exportRecord.user?.tenantId !== req.tenantId) {
+        return res.status(403).json({ status: 'error', message: 'Acesso negado' });
+      }
     }
 
     if (!fs.existsSync(exportRecord.filePath)) {
