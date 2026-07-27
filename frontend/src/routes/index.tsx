@@ -331,6 +331,8 @@ const LoginPage: React.FC = () => {
             role: demoAccount.role,
             firstName: demoAccount.firstName,
             lastName: demoAccount.lastName,
+            tenantId: 'escola-matriz-default-id',
+            tenantName: 'Escola Matriz Zx-Escola',
           };
           signIn(`demo-token-${emailKey}`, `demo-refresh-${emailKey}`, demoUser);
           addToast({

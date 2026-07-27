@@ -36,6 +36,57 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
   }
 
   // Intercept write operations and collection queries for persistence
+  // --- TENANTS / SCHOOLS ---
+  if (resource === 'tenants') {
+    const storeKey = 'tenants_branding';
+    const initialBranding = {
+      id: 'escola-matriz-default-id',
+      name: 'Escola Matriz Zx-Escola',
+      logoUrl: '',
+      primaryColor: '#3b82f6',
+      secondaryColor: '#1e293b',
+    };
+
+    const branding = getStore(storeKey, initialBranding);
+
+    if (parts.length === 2 && parts[1] === 'current') {
+      if (methodLower === 'get') {
+        return {
+          status: 'success',
+          data: branding
+        };
+      }
+    }
+
+    if (parts.length === 3 && parts[2] === 'public') {
+      return {
+        status: 'success',
+        data: branding
+      };
+    }
+
+    if (parts.length === 2) {
+      if (methodLower === 'put' || methodLower === 'patch') {
+        branding.name = reqBody.name || branding.name;
+        branding.logoUrl = reqBody.logoUrl !== undefined ? reqBody.logoUrl : branding.logoUrl;
+        setStore(storeKey, branding);
+        return { status: 'success', data: branding };
+      }
+    }
+
+    if (parts.length === 3 && parts[2] === 'logo') {
+      const mockLogo = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=120&h=120&q=80';
+      branding.logoUrl = mockLogo;
+      setStore(storeKey, branding);
+      return {
+        status: 'success',
+        data: {
+          logoUrl: mockLogo
+        }
+      };
+    }
+  }
+
   // --- STUDENTS ---
   if (resource === 'students') {
     const list = getStore('students', [
