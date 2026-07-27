@@ -56,9 +56,9 @@ app.use(
   })
 );
 
-// Body Parser — limit to 10mb to prevent payload attacks
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body Parser — limit to 100mb to prevent payload attacks
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Request Logging
 if (env.NODE_ENV !== 'test') {

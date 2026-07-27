@@ -764,7 +764,7 @@ const StudentDetailsDrawer: React.FC<StudentDetailsDrawerProps> = ({
                       className="w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Formatos aceitos: PNG, JPG, PDF, DOC, DOCX (máx. 10MB)
+                      Formatos aceitos: PNG, JPG, PDF, DOC, DOCX (máx. 100MB)
                     </p>
                     <Button
                       type="submit"

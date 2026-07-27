@@ -211,11 +211,11 @@ export const DocumentsPage: React.FC = () => {
       });
       return;
     }
-    if (!isValidFileSize(file, 10)) {
-      // 10MB limit
+    if (!isValidFileSize(file, 100)) {
+      // 100MB limit
       addToast({
         type: 'warning',
-        message: 'O tamanho máximo do arquivo deve ser de 10MB.',
+        message: 'O tamanho máximo do arquivo deve ser de 100MB.',
       });
       return;
     }

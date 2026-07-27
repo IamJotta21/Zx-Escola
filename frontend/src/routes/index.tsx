@@ -3048,7 +3048,7 @@ const SettingsPage: React.FC = () => {
                         {uploadingLogo && <Spinner size="sm" />}
                       </div>
                       <span className="text-[10px] text-muted-foreground block mt-1">
-                        Formatos permitidos: PNG, JPG, JPEG (Tamanho máx: 10MB)
+                        Formatos permitidos: PNG, JPG, JPEG (Tamanho máx: 100MB)
                       </span>
                     </div>
                   </div>
