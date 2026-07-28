@@ -19,9 +19,12 @@ export const Logo: React.FC<LogoProps> = ({ size = 'md', className = '', showTex
 
   if (tenantLogoUrl) {
     const apiBase = import.meta.env.VITE_API_URL || '';
+    const rootBase = apiBase.replace(/\/api\/?$/, '');
+    const cleanBase = rootBase.endsWith('/') ? rootBase.slice(0, -1) : rootBase;
+    const cleanUrl = tenantLogoUrl.startsWith('/') ? tenantLogoUrl : `/${tenantLogoUrl}`;
     const fullLogoUrl = tenantLogoUrl.startsWith('http') || tenantLogoUrl.startsWith('data:')
       ? tenantLogoUrl
-      : `${apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase}${tenantLogoUrl}`;
+      : `${cleanBase}${cleanUrl}`;
 
     return (
       <div className={`inline-flex items-center gap-3 select-none ${className}`}>

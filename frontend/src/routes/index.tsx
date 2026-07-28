@@ -3063,7 +3063,13 @@ const SettingsPage: React.FC = () => {
                     <div className="flex flex-col items-center gap-4 text-center">
                       {logoUrlInput ? (
                         <img
-                          src={logoUrlInput.startsWith('http') || logoUrlInput.startsWith('data:') ? logoUrlInput : `${import.meta.env.VITE_API_URL || ''}${logoUrlInput}`}
+                          src={
+                            logoUrlInput.startsWith('http') || logoUrlInput.startsWith('data:')
+                              ? logoUrlInput
+                              : `${(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').endsWith('/') 
+                                  ? (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').slice(0, -1) 
+                                  : (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '')}${logoUrlInput.startsWith('/') ? logoUrlInput : `/${logoUrlInput}`}`
+                          }
                           alt="Logo Preview"
                           className="w-24 h-24 object-contain rounded-xl shadow-md border border-border/40 bg-card p-2"
                         />
