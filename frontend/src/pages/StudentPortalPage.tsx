@@ -167,6 +167,7 @@ export const StudentPortalPage: React.FC = () => {
         scheduleRes,
         announcementsRes,
         documentsRes,
+        tenantRes,
       ] = await Promise.all([
         api.get('/portal/student/profile'),
         api.get('/portal/student/dashboard').catch(() => ({ data: { data: null } })),
@@ -176,6 +177,7 @@ export const StudentPortalPage: React.FC = () => {
         api.get('/portal/student/schedule').catch(() => ({ data: { data: { contents: [], activities: [] } } })),
         api.get('/portal/student/announcements'),
         api.get('/portal/student/documents').catch(() => ({ data: { data: [] } })),
+        api.get('/tenants/current').catch(() => ({ data: { data: null } })),
       ]);
 
       setProfile(profileRes.data.data);
@@ -186,6 +188,10 @@ export const StudentPortalPage: React.FC = () => {
       setSchedule(scheduleRes.data.data || { contents: [], activities: [] });
       setAnnouncements(announcementsRes.data.data || []);
       setDocuments(documentsRes.data.data || []);
+
+      if (tenantRes?.data?.data?.bulletinTemplate) {
+        localStorage.setItem('bulletin_config_custom', tenantRes.data.data.bulletinTemplate);
+      }
     } catch (err) {
       addToast({ type: 'error', message: 'Erro ao obter dados do portal do aluno.' });
     } finally {

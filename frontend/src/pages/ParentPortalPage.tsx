@@ -178,13 +178,14 @@ export const ParentPortalPage: React.FC = () => {
       if (!childId) return;
       try {
         setIsLoading(true);
-        const [gradesRes, financeRes, attendanceRes, messagesRes, documentsRes] =
+        const [gradesRes, financeRes, attendanceRes, messagesRes, documentsRes, tenantRes] =
           await Promise.all([
             api.get('/portal/guardian/grades', { params: { studentId: childId } }),
             api.get('/portal/guardian/finance', { params: { studentId: childId } }),
             api.get('/portal/guardian/attendance', { params: { studentId: childId } }),
             api.get('/portal/guardian/messages'),
             api.get('/portal/guardian/documents', { params: { studentId: childId } }),
+            api.get('/tenants/current').catch(() => ({ data: { data: null } })),
           ]);
 
         setGrades(gradesRes.data.data || []);
@@ -197,6 +198,10 @@ export const ParentPortalPage: React.FC = () => {
             : { notifications: [], announcements: [] }
         );
         setDocuments(documentsRes.data.data || []);
+
+        if (tenantRes?.data?.data?.bulletinTemplate) {
+          localStorage.setItem('bulletin_config_custom', tenantRes.data.data.bulletinTemplate);
+        }
       } catch (err) {
         addToast({ type: 'error', message: 'Erro ao buscar informações do aluno.' });
       } finally {
