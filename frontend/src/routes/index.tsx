@@ -2760,6 +2760,44 @@ const SettingsPage: React.FC = () => {
       return;
     }
 
+    // Check if it is a demo/offline session
+    const currentToken = localStorage.getItem('@ZxEscola:accessToken');
+    const isDemoSession =
+      currentToken === 'superadmin-access-token' ||
+      currentToken === 'demo-token' ||
+      (currentToken?.startsWith('demo-token-') ?? false);
+
+    if (isDemoSession) {
+      setUploadingLogo(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Url = event.target?.result as string;
+        setLogoUrlInput(base64Url);
+        updateTenantBranding(schoolName, base64Url);
+
+        // Persist in mock database store
+        const mockDb = localStorage.getItem('@ZxEscola:mockDb:tenants_branding');
+        if (mockDb) {
+          try {
+            const branding = JSON.parse(mockDb);
+            branding.logoUrl = base64Url;
+            localStorage.setItem('@ZxEscola:mockDb:tenants_branding', JSON.stringify(branding));
+          } catch {
+            // ignore
+          }
+        }
+
+        addToast({ type: 'success', message: 'Logo enviada e salva com sucesso! (Modo Demo)' });
+        setUploadingLogo(false);
+      };
+      reader.onerror = () => {
+        addToast({ type: 'error', message: 'Erro ao processar imagem.' });
+        setUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
