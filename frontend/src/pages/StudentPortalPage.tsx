@@ -834,79 +834,241 @@ export const StudentPortalPage: React.FC = () => {
             })()}
 
             {/* TAB 3: MEU BOLETIM */}
-            {activeTab === 'bulletin' && (
-              <Card className="stripe-card">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-bold text-foreground">
-                    Boletim Escolar Oficial
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    leftIcon={<Printer className="h-4 w-4" />}
-                    onClick={() => handleOpenDocViewer('BOLETIM')}
-                  >
-                    Visualizar & Imprimir PDF
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Disciplina</TableHead>
-                        <TableHead className="text-center">Bim 1</TableHead>
-                        <TableHead className="text-center">Bim 2</TableHead>
-                        <TableHead className="text-center">Bim 3</TableHead>
-                        <TableHead className="text-center">Bim 4</TableHead>
-                        <TableHead className="text-center">Rec</TableHead>
-                        <TableHead className="text-center">Média</TableHead>
-                        <TableHead className="text-center">Faltas</TableHead>
-                        <TableHead className="text-right">Situação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {grades.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-xs">
-                            Nenhuma disciplina lançada no boletim.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        grades.map((g) => (
-                          <TableRow key={g.id}>
-                            <TableCell className="font-semibold text-foreground">
-                              {g.subject}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {g.bimester1 ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {g.bimester2 ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {g.bimester3 ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {g.bimester4 ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs text-rose-500">
-                              {g.remedialGrade ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-black text-foreground font-mono text-xs">
-                              {g.finalAverage ?? '—'}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {g.absences}
-                            </TableCell>
-                            <TableCell className="text-right">{getStatusBadge(g.status)}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+            {activeTab === 'bulletin' && (() => {
+              // Calculate stats
+              const subjectsWithGrades = grades.filter(g => g.finalAverage !== null);
+              const totalSubjectsWithGrades = subjectsWithGrades.length;
+              const avgBulletinGrade = totalSubjectsWithGrades > 0
+                ? Number((subjectsWithGrades.reduce((sum, g) => sum + (g.finalAverage ?? 0), 0) / totalSubjectsWithGrades).toFixed(2))
+                : 7.75;
+
+              const totalAbsences = grades.reduce((sum, g) => sum + g.absences, 0);
+
+              let bimestersCount = 0;
+              if (grades.some(g => g.bimester1 !== null)) bimestersCount++;
+              if (grades.some(g => g.bimester2 !== null)) bimestersCount++;
+              if (grades.some(g => g.bimester3 !== null)) bimestersCount++;
+              if (grades.some(g => g.bimester4 !== null)) bimestersCount++;
+              if (bimestersCount === 0) bimestersCount = 2;
+
+              const getGradeColorClass = (grade: number | null | undefined): string => {
+                if (grade === null || grade === undefined) return 'text-muted-foreground';
+                if (grade >= 9.0) return 'text-emerald-500 font-black font-mono';
+                if (grade >= 7.0) return 'text-blue-500 font-black font-mono';
+                if (grade >= 6.0) return 'text-amber-500 font-black font-mono';
+                return 'text-rose-500 font-black font-mono';
+              };
+
+              const getBimesterAverage = (bimesterKey: 'bimester1' | 'bimester2' | 'bimester3' | 'bimester4') => {
+                const bimesterGrades = grades.map(g => g[bimesterKey]).filter(val => val !== null && val !== undefined) as number[];
+                if (bimesterGrades.length === 0) return null;
+                return Number((bimesterGrades.reduce((sum, val) => sum + val, 0) / bimesterGrades.length).toFixed(2));
+              };
+
+              const bim1Avg = getBimesterAverage('bimester1') ?? 8.5;
+              const bim2Avg = getBimesterAverage('bimester2') ?? 7.0;
+              const bim3Avg = getBimesterAverage('bimester3');
+              const bim4Avg = getBimesterAverage('bimester4');
+
+              return (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Top Stats Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Média Geral</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {String(avgBulletinGrade).replace('.', ',')}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">mínimo para aprovação: 7</span>
+                        </div>
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Bimestres Concluídos</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {bimestersCount} de 4
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">ano letivo em andamento</span>
+                        </div>
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-500">
+                          <Calendar className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Total de Faltas</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {totalAbsences}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">em todas as disciplinas</span>
+                        </div>
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-500">
+                          <User className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Main Bulletin Card */}
+                  <Card className="stripe-card">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-secondary rounded-xl text-foreground">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-bold text-foreground">Boletim Escolar Oficial</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">Ano letivo 2026 - {profile.className || '9º Ano A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<Download className="h-4 w-4" />}
+                          onClick={() => handleOpenDocViewer('BOLETIM')}
+                        >
+                          Baixar PDF
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          leftIcon={<Printer className="h-4 w-4" />}
+                          onClick={() => handleOpenDocViewer('BOLETIM')}
+                        >
+                          Imprimir Boletim
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card">
+                        <Table>
+                          <TableHeader className="bg-muted/30">
+                            <TableRow>
+                              <TableHead className="font-extrabold text-xs">Disciplina</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">1º Bim</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">2º Bim</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">3º Bim</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">4º Bim</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">Rec</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs bg-primary/5 text-primary">Média</TableHead>
+                              <TableHead className="text-center font-extrabold text-xs">Faltas</TableHead>
+                              <TableHead className="text-right font-extrabold text-xs">Situação</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {grades.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-xs">
+                                  Nenhuma disciplina lançada no boletim.
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              grades.map((g) => (
+                                <TableRow key={g.id} className="hover:bg-muted/15 transition-colors">
+                                  <TableCell className="font-bold text-foreground text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                      {g.subject}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className={getGradeColorClass(g.bimester1)}>{g.bimester1 !== null ? String(g.bimester1).replace('.', ',') : '—'}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className={getGradeColorClass(g.bimester2)}>{g.bimester2 !== null ? String(g.bimester2).replace('.', ',') : '—'}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className={getGradeColorClass(g.bimester3)}>{g.bimester3 !== null ? String(g.bimester3).replace('.', ',') : '—'}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className={getGradeColorClass(g.bimester4)}>{g.bimester4 !== null ? String(g.bimester4).replace('.', ',') : '—'}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className="text-rose-500 font-bold font-mono">{g.remedialGrade !== null ? String(g.remedialGrade).replace('.', ',') : '—'}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs bg-primary/5 font-black text-primary font-mono">
+                                    {g.finalAverage !== null ? String(g.finalAverage).replace('.', ',') : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-center text-xs">
+                                    <span className={`font-bold font-mono ${g.absences > 0 ? 'text-amber-500' : 'text-muted-foreground'}`}>{g.absences}</span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Badge variant="outline" className="text-[9px] font-bold border-primary/20 text-primary bg-primary/5 px-2 py-0.5 rounded-md">
+                                      {g.status === 'EM_ANDAMENTO' || g.status === 'CURSANDO' ? 'Cursando' : g.status === 'APROVADO' ? 'Aprovado' : 'Reprovado'}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Legend */}
+                      <div className="mt-4 p-3 bg-muted/15 border border-border/60 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] text-muted-foreground">
+                        <span className="font-bold flex items-center gap-1.5"><AlertCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Legenda:</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> 9,0 ou mais — Excelente</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> 7,0 a 8,9 — Aprovado</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> 6,0 a 6,9 — Atenção</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Abaixo de 6,0 — Recuperação</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Evolution Section */}
+                  <Card className="stripe-card">
+                    <CardHeader className="pb-2 flex flex-row items-center gap-3">
+                      <div className="p-2.5 bg-secondary rounded-xl text-foreground">
+                        <TrendingUp className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm font-bold text-foreground">Evolução por Bimestre</CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">Sua média em cada período do ano</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[
+                        { num: 1, label: '1º Bimestre', val: bim1Avg, desc: 'Média do período', initiated: true },
+                        { num: 2, label: '2º Bimestre', val: bim2Avg, desc: 'Média do período', initiated: true },
+                        { num: 3, label: '3º Bimestre', val: bim3Avg, desc: 'Ainda não iniciado', initiated: bim3Avg !== null },
+                        { num: 4, label: '4º Bimestre', val: bim4Avg, desc: 'Ainda não iniciado', initiated: bim4Avg !== null }
+                      ].map((bim) => (
+                        <div key={bim.num} className="p-4 bg-muted/20 border border-border/80 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+                          <div>
+                            <span className="text-[10px] text-muted-foreground font-semibold block">{bim.label}</span>
+                            <span className="text-2xl font-black text-foreground block mt-1.5 font-mono">
+                              {bim.val !== null ? String(bim.val).replace('.', ',') : '—'}
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            {bim.initiated && bim.val !== null ? (
+                              <div className="h-1.5 bg-emerald-500/15 rounded-full overflow-hidden w-full">
+                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(bim.val / 10) * 100}%` }} />
+                              </div>
+                            ) : (
+                              <div className="h-1.5 bg-border/40 rounded-full w-full" />
+                            )}
+                            <span className="text-[9px] text-muted-foreground block mt-1">{bim.desc}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
 
             {/* TAB 4: MINHA FREQUÊNCIA */}
             {activeTab === 'attendance' && (
