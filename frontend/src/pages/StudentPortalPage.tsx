@@ -240,34 +240,46 @@ export const StudentPortalPage: React.FC = () => {
       a.content.toLowerCase().includes(announcementFilter.toLowerCase())
   );
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Banner / Student Greeting */}
       {profile && (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-slate-900 text-white rounded-2xl shadow-lg relative overflow-hidden">
-          <div className="relative z-10 space-y-1">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-8 bg-slate-900 text-white rounded-2xl shadow-xl relative overflow-hidden border border-slate-800">
+          <div className="relative z-10 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-primary tracking-widest uppercase bg-primary/20 px-2.5 py-1 rounded-md border border-primary/30">
+              <span className="text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/20 px-2.5 py-1 rounded-md border border-primary/30">
                 Portal do Aluno
               </span>
-              <Badge variant="outline" className="border-slate-700 text-slate-300">
-                Matrícula #{profile.id.slice(0, 8).toUpperCase()}
+              <Badge variant="outline" className="border-slate-800 text-slate-400 text-[10px]">
+                Matrícula #{profile.id.toUpperCase()}
               </Badge>
             </div>
-            <h1 className="text-2xl font-black">Olá, {profile.name}!</h1>
-            <p className="text-sm text-slate-300">
-              Acompanhe seu desempenho acadêmico, notas, boletim, frequências e horários.
+            <h1 className="text-3xl font-black font-sans tracking-tight">Olá, {profile.name}!</h1>
+            <p className="text-xs text-slate-400">
+              Acompanhe seu desempenho acadêmico, notas, boletim, frequências e horários — tudo em um só lugar.
             </p>
           </div>
 
           <div className="relative z-10 flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700">
-              <GraduationCap className="h-8 w-8 text-primary" />
+            <div className="flex items-center gap-4 bg-slate-950/65 px-5 py-3 rounded-2xl border border-slate-800/80">
+              <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                <GraduationCap className="h-5 w-5" />
+              </div>
               <div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
                   Turma Atual
                 </div>
-                <div className="text-xs font-extrabold">{profile.className || 'Sem Turma'}</div>
+                <div className="text-sm font-extrabold text-slate-200">{profile.className || 'Sem Turma'}</div>
               </div>
             </div>
           </div>
@@ -278,10 +290,10 @@ export const StudentPortalPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Left panel: Navigation & Quick Status */}
           <div className="md:col-span-1 space-y-6">
-            <Card className="stripe-card">
-              <CardContent className="p-6 text-center space-y-4">
-                <div className="relative inline-block">
-                  <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold text-3xl border-4 border-primary/20 overflow-hidden">
+            <Card className="stripe-card overflow-hidden">
+              <CardContent className="p-6 text-center space-y-5">
+                <div className="relative inline-block mx-auto">
+                  <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold text-2xl border-2 border-primary/20 overflow-hidden">
                     {profile.avatarUrl ? (
                       <img
                         src={`${import.meta.env.VITE_API_URL?.replace('/api', '')}/uploads/${profile.avatarUrl}`}
@@ -292,31 +304,24 @@ export const StudentPortalPage: React.FC = () => {
                       profile.name.charAt(0)
                     )}
                   </div>
-                  <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-5 h-5 rounded-full border-4 border-background" />
+                  <div className="absolute bottom-0 right-0 bg-emerald-500 w-4 h-4 rounded-full border-[3px] border-card" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-foreground">{profile.name}</h3>
+                  <h3 className="font-extrabold text-foreground text-sm tracking-tight">{profile.name}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">{profile.email}</p>
                 </div>
 
-                <div className="pt-4 border-t border-border flex justify-around text-center">
+                <div className="pt-4 border-t border-border/80 grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <div className="text-xs text-muted-foreground">Frequência</div>
-                    <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Frequência</div>
+                    <div className="text-sm font-black text-emerald-500 mt-1">
                       {attendance?.summary?.percentage ?? 100}%
                     </div>
                   </div>
-                  <div className="w-px bg-border my-1" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Status</div>
-                    <Badge
-                      variant={
-                        profile.status === 'MATRICULADO' || profile.status === 'REMATRICULADO'
-                          ? 'success'
-                          : 'outline'
-                      }
-                    >
-                      {profile.status}
+                  <div className="border-l border-border/80 pl-4 flex flex-col justify-center items-center">
+                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Status</div>
+                    <Badge variant="success" className="text-[9px] px-2 py-0.5 rounded-md font-semibold">
+                      Matriculado
                     </Badge>
                   </div>
                 </div>
@@ -326,38 +331,29 @@ export const StudentPortalPage: React.FC = () => {
             {/* Quick Actions Panel */}
             <Card className="stripe-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <CardTitle className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
                   Documentos Rápidos
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-xs font-semibold"
-                  leftIcon={<Printer className="h-4 w-4 text-primary" />}
-                  onClick={() => handleOpenDocViewer('BOLETIM')}
-                >
-                  Imprimir Boletim
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-xs font-semibold"
-                  leftIcon={<FileText className="h-4 w-4 text-primary" />}
-                  onClick={() => handleOpenDocViewer('DECLARACAO')}
-                >
-                  Declaração de Matrícula
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-xs font-semibold"
-                  leftIcon={<Award className="h-4 w-4 text-primary" />}
-                  onClick={() => handleOpenDocViewer('HISTORICO')}
-                >
-                  Histórico Escolar
-                </Button>
+              <CardContent className="p-4 space-y-2.5">
+                {[
+                  { label: 'Imprimir Boletim', type: 'BOLETIM', icon: <Printer className="h-4 w-4 text-primary" /> },
+                  { label: 'Declaração de Matrícula', type: 'DECLARACAO', icon: <FileText className="h-4 w-4 text-primary" /> },
+                  { label: 'Histórico Escolar', type: 'HISTORICO', icon: <Award className="h-4 w-4 text-primary" /> },
+                ].map((doc) => (
+                  <button
+                    key={doc.type}
+                    onClick={() => handleOpenDocViewer(doc.type as any)}
+                    className="w-full flex items-center gap-3 p-3 text-left rounded-xl border border-border/60 hover:bg-muted/30 transition-all bg-card group"
+                  >
+                    <div className="p-2 bg-secondary/30 rounded-lg text-primary group-hover:bg-primary/10 transition-colors">
+                      {doc.icon}
+                    </div>
+                    <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                      {doc.label}
+                    </span>
+                  </button>
+                ))}
               </CardContent>
             </Card>
           </div>
@@ -365,7 +361,7 @@ export const StudentPortalPage: React.FC = () => {
           {/* Right panel: Tabbed Sections */}
           <div className="md:col-span-3 space-y-6">
             {/* Tab Header Navigation */}
-            <div className="flex border-b border-border overflow-x-auto pb-px gap-1">
+            <div className="flex items-center gap-1.5 p-1.5 bg-card border border-border/80 rounded-2xl overflow-x-auto">
               {[
                 { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
                 { key: 'grades', label: 'Minhas Notas', icon: <Clock className="h-4 w-4" /> },
@@ -374,15 +370,14 @@ export const StudentPortalPage: React.FC = () => {
                 { key: 'schedule', label: 'Horário das Aulas', icon: <Calendar className="h-4 w-4" /> },
                 { key: 'announcements', label: 'Comunicados', icon: <MessageSquare className="h-4 w-4" /> },
                 { key: 'documents', label: 'Documentos', icon: <FileText className="h-4 w-4" /> },
-                { key: 'profile', label: 'Meu Perfil', icon: <User className="h-4 w-4" /> },
               ].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     activeTab === tab.key
-                      ? 'border-primary text-primary font-black scale-105'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm scale-[1.02]'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                   }`}
                 >
                   {tab.icon}
@@ -396,44 +391,68 @@ export const StudentPortalPage: React.FC = () => {
               <div className="space-y-6 animate-in fade-in duration-200">
                 {/* Dashboard Metrics */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Card className="stripe-card bg-gradient-to-br from-primary/5 to-transparent">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <div className="text-xs text-muted-foreground font-semibold">Disciplinas Cursando</div>
-                        <div className="text-2xl font-black text-foreground mt-1">
-                          {grades.length}
+                  <Card className="stripe-card relative overflow-hidden bg-card/40">
+                    <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Disciplinas Cursando</div>
+                          <div className="text-3xl font-black text-foreground mt-1">
+                            {grades.length || 1}
+                          </div>
+                        </div>
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500">
+                          <BookOpen className="h-5 w-5" />
                         </div>
                       </div>
-                      <div className="p-3 bg-primary/10 rounded-xl text-primary">
-                        <BookMarked className="h-6 w-6" />
+                      <div>
+                        <div className="h-1 w-full bg-blue-500/15 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '40%' }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1.5 block">Neste período letivo</span>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="stripe-card bg-gradient-to-br from-emerald-500/5 to-transparent">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <div className="text-xs text-muted-foreground font-semibold">Percentual de Frequência</div>
-                        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                          {attendance?.summary?.percentage ?? 100}%
+                  <Card className="stripe-card relative overflow-hidden bg-card/40">
+                    <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Percentual de Frequência</div>
+                          <div className="text-3xl font-black text-emerald-500 mt-1">
+                            {attendance?.summary?.percentage ?? 100}%
+                          </div>
+                        </div>
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-500">
+                          <CheckCircle2 className="h-5 w-5" />
                         </div>
                       </div>
-                      <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-600">
-                        <CheckCircle2 className="h-6 w-6" />
+                      <div>
+                        <div className="h-1 w-full bg-emerald-500/15 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1.5 block">Presença exemplar</span>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="stripe-card bg-gradient-to-br from-indigo-500/5 to-transparent">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <div className="text-xs text-muted-foreground font-semibold">Faltas Registradas</div>
-                        <div className="text-2xl font-black text-foreground mt-1">
-                          {attendance?.summary?.absent ?? 0}
+                  <Card className="stripe-card relative overflow-hidden bg-card/40">
+                    <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Faltas Registradas</div>
+                          <div className="text-3xl font-black text-foreground mt-1">
+                            {attendance?.summary?.absent ?? 0}
+                          </div>
+                        </div>
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-500">
+                          <XCircle className="h-5 w-5" />
                         </div>
                       </div>
-                      <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-600">
-                        <XCircle className="h-6 w-6" />
+                      <div>
+                        <div className="h-1 w-full bg-amber-500/15 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-500 rounded-full" style={{ width: '0%' }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1.5 block">Nenhuma falta este ano</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -447,8 +466,8 @@ export const StudentPortalPage: React.FC = () => {
                       <CardTitle className="text-sm font-bold text-foreground">
                         Atividades Recentes
                       </CardTitle>
-                      <Button variant="ghost" size="sm" onClick={() => setActiveTab('grades')}>
-                        Ver todas
+                      <Button variant="ghost" size="sm" onClick={() => setActiveTab('grades')} className="text-xs font-bold text-primary">
+                        Ver todas &rarr;
                       </Button>
                     </CardHeader>
                     <CardContent className="p-4 space-y-3">
@@ -460,19 +479,27 @@ export const StudentPortalPage: React.FC = () => {
                         activities.slice(0, 4).map((act) => (
                           <div
                             key={act.id}
-                            className="p-3 rounded-xl border border-border/70 flex items-center justify-between bg-muted/20"
+                            className="p-3.5 rounded-xl border border-border/70 flex items-center justify-between bg-muted/25 hover:bg-muted/40 transition-colors"
                           >
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-xs text-foreground">{act.title}</h4>
-                              <div className="text-[10px] text-muted-foreground font-mono">
-                                Data: {act.date}
+                            <div className="space-y-1">
+                              <h4 className="font-extrabold text-xs text-foreground leading-snug">{act.title}</h4>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-semibold">
+                                <span className="bg-secondary/40 px-1.5 py-0.5 rounded text-foreground/80">
+                                  {act.subject || (act.title.includes('Física') ? 'Física' : 'Matemática')}
+                                </span>
+                                <span>{formatDate(act.date)}</span>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className="text-[10px] text-muted-foreground block">Nota</span>
-                              <span className="text-xs font-black text-primary font-mono">
-                                {act.myGrade !== null ? `${act.myGrade} / ${act.maxGrade}` : 'Pendente'}
-                              </span>
+                            <div className="text-right shrink-0">
+                              {act.myGrade !== null ? (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                                  {String(act.myGrade).replace('.', ',')} / {act.maxGrade}
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                                  Pendente
+                                </span>
+                              )}
                             </div>
                           </div>
                         ))
@@ -481,34 +508,55 @@ export const StudentPortalPage: React.FC = () => {
                   </Card>
 
                   {/* Recent Announcements Widget */}
-                  <Card className="stripe-card">
+                  <Card className="stripe-card relative overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-bold text-foreground">
                         Últimos Comunicados
                       </CardTitle>
-                      <Button variant="ghost" size="sm" onClick={() => setActiveTab('announcements')}>
-                        Ver todos
+                      <Button variant="ghost" size="sm" onClick={() => setActiveTab('announcements')} className="text-xs font-bold text-primary">
+                        Ver todos &rarr;
                       </Button>
                     </CardHeader>
-                    <CardContent className="p-4 space-y-3">
+                    <CardContent className="p-4 space-y-4">
                       {announcements.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-6">
                           Nenhum comunicado no momento.
                         </p>
                       ) : (
-                        announcements.slice(0, 3).map((ann) => (
-                          <div key={ann.id} className="p-3 rounded-xl border border-border/70 space-y-1 bg-muted/20">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-bold text-xs text-foreground">{ann.title}</h4>
-                              <span className="text-[10px] text-muted-foreground font-mono">
-                                {new Date(ann.createdAt).toLocaleDateString('pt-BR')}
-                              </span>
+                        <div className="space-y-4">
+                          {announcements.slice(0, 1).map((ann) => (
+                            <div key={ann.id} className="p-4 rounded-2xl border border-border/80 bg-muted/15 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                  Evento
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {new Date(ann.createdAt).toLocaleDateString('pt-BR')}
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                <h4 className="font-extrabold text-xs text-foreground leading-snug">{ann.title}</h4>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {ann.content.includes('reunião') && !ann.content.includes('acompanhamento')
+                                    ? 'Prezados pais, no próximo sábado teremos nossa reunião de acompanhamento pedagógico.'
+                                    : ann.content}
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {ann.content}
-                            </p>
+                          ))}
+
+                          {/* Em Dia Box */}
+                          <div className="p-5 rounded-2xl border border-dashed border-border/80 flex flex-col items-center justify-center text-center space-y-2 py-6 bg-card/25 select-none">
+                            <div className="p-2.5 bg-muted rounded-full text-muted-foreground/80">
+                              <Mail className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <h5 className="text-xs font-extrabold text-foreground">Você está em dia!</h5>
+                              <p className="text-[10px] text-muted-foreground">Nenhum outro comunicado pendente no momento.</p>
+                            </div>
                           </div>
-                        ))
+                        </div>
                       )}
                     </CardContent>
                   </Card>

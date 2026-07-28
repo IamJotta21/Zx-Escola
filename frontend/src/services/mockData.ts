@@ -1640,8 +1640,8 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
     const studentCards = reportCards.filter(rc => rc.studentId === 'aluno-lucas-id');
 
     const staticActivities = [
-      { id: 'act-1', title: 'Trabalho de Física - Óptica', date: '2026-07-24', maxGrade: 10, myGrade: null },
-      { id: 'act-2', title: 'Exercícios de Álgebra', date: '2026-07-20', maxGrade: 10, myGrade: 9.5 }
+      { id: 'act-1', title: 'Trabalho de Física - Óptica', subject: 'Física', date: '2026-07-24', maxGrade: 10, myGrade: null },
+      { id: 'act-2', title: 'Exercícios de Álgebra', subject: 'Matemática', date: '2026-07-20', maxGrade: 10, myGrade: 9.5 }
     ];
 
     studentCards.forEach((rc, index) => {
@@ -1649,6 +1649,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
         staticActivities.push({
           id: `act-grade-1-${index}`,
           title: `Avaliação 1º Bimestre - ${rc.subject}`,
+          subject: rc.subject,
           date: '2026-04-15',
           maxGrade: 10,
           myGrade: rc.bimester1
@@ -1658,6 +1659,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
         staticActivities.push({
           id: `act-grade-2-${index}`,
           title: `Avaliação 2º Bimestre - ${rc.subject}`,
+          subject: rc.subject,
           date: '2026-07-02',
           maxGrade: 10,
           myGrade: rc.bimester2
@@ -1667,6 +1669,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
         staticActivities.push({
           id: `act-grade-3-${index}`,
           title: `Avaliação 3º Bimestre - ${rc.subject}`,
+          subject: rc.subject,
           date: '2026-09-20',
           maxGrade: 10,
           myGrade: rc.bimester3
@@ -1676,6 +1679,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
         staticActivities.push({
           id: `act-grade-4-${index}`,
           title: `Avaliação 4º Bimestre - ${rc.subject}`,
+          subject: rc.subject,
           date: '2026-11-28',
           maxGrade: 10,
           myGrade: rc.bimester4
