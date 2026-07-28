@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Search,
   Filter,
+  TrendingUp,
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -152,6 +153,7 @@ export const StudentPortalPage: React.FC = () => {
 
   // Search filter for announcements
   const [announcementFilter, setAnnouncementFilter] = useState('');
+  const [filterType, setFilterType] = useState<'TODAS' | 'AVALIACOES' | 'TRABALHOS' | 'EXERCICIOS'>('TODAS');
 
   const fetchAllStudentData = useCallback(async () => {
     try {
@@ -565,57 +567,271 @@ export const StudentPortalPage: React.FC = () => {
             )}
 
             {/* TAB 2: MINHAS NOTAS */}
-            {activeTab === 'grades' && (
-              <Card className="stripe-card">
-                <CardHeader>
-                  <CardTitle className="text-sm font-bold text-foreground">
-                    Atividades, Avaliações e Trabalhos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Título da Atividade</TableHead>
-                        <TableHead>Data de Lançamento / Limite</TableHead>
-                        <TableHead className="text-center">Nota Máxima</TableHead>
-                        <TableHead className="text-right">Minha Nota</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {activities.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-xs">
-                            Nenhuma atividade registrada até o momento.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        activities.map((a) => (
-                          <TableRow key={a.id}>
-                            <TableCell className="font-semibold text-foreground">
-                              {a.title}
-                            </TableCell>
-                            <TableCell className="font-mono text-xs">{a.date}</TableCell>
-                            <TableCell className="text-center font-mono text-xs">
-                              {a.maxGrade}
-                            </TableCell>
-                            <TableCell className="text-right font-black font-mono text-xs">
-                              {a.myGrade !== null ? (
-                                <span className={a.myGrade >= 6 ? 'text-emerald-600' : 'text-rose-500'}>
-                                  {a.myGrade}
-                                </span>
+            {activeTab === 'grades' && (() => {
+              const correctedActivities = activities.filter(a => a.myGrade !== null);
+              const totalCorrected = correctedActivities.length;
+              const totalPending = activities.length - totalCorrected;
+              const avgGrade = totalCorrected > 0 
+                ? Number((correctedActivities.reduce((sum, a) => sum + (a.myGrade ?? 0), 0) / totalCorrected).toFixed(1))
+                : 0;
+              const bestActivity = correctedActivities.reduce((best, a) => {
+                if (!best) return a;
+                return (a.myGrade ?? 0) > (best.myGrade ?? 0) ? a : best;
+              }, null as any);
+
+              // Group by subject
+              const subjectMap: Record<string, { total: number; corrected: number; sum: number }> = {};
+              activities.forEach(a => {
+                const sub = a.subject || (a.title.includes('Física') ? 'Física' : 'Matemática');
+                if (!subjectMap[sub]) {
+                  subjectMap[sub] = { total: 0, corrected: 0, sum: 0 };
+                }
+                subjectMap[sub].total += 1;
+                if (a.myGrade !== null) {
+                  subjectMap[sub].corrected += 1;
+                  subjectMap[sub].sum += a.myGrade;
+                }
+              });
+
+              const getActivityCategory = (title: string): 'AVALIACOES' | 'TRABALHOS' | 'EXERCICIOS' => {
+                const t = title.toLowerCase();
+                if (t.includes('trabalho')) return 'TRABALHOS';
+                if (t.includes('exercício') || t.includes('exercicios')) return 'EXERCICIOS';
+                return 'AVALIACOES';
+              };
+
+              const filteredActivities = activities.filter(act => {
+                if (filterType === 'TODAS') return true;
+                return getActivityCategory(act.title) === filterType;
+              });
+
+              return (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Top Stats Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Média Geral</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {String(avgGrade).replace('.', ',')}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">de 10 pontos</span>
+                        </div>
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Melhor Nota</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {bestActivity ? String(bestActivity.myGrade).replace('.', ',') : '—'}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5 truncate max-w-[110px]">
+                            {bestActivity ? bestActivity.title : 'Nenhuma'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-500">
+                          <Award className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Avaliadas</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {totalCorrected}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">atividades corrigidas</span>
+                        </div>
+                        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="stripe-card relative overflow-hidden bg-card/45">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Pendentes</div>
+                          <div className="text-2xl font-black text-foreground mt-1">
+                            {totalPending}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground block mt-0.5">aguardando nota</span>
+                        </div>
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-500">
+                          <Clock className="h-5 w-5" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Middle Subject Breakdown */}
+                  <Card className="stripe-card">
+                    <CardHeader className="pb-2 flex flex-row items-center gap-3">
+                      <div className="p-2.5 bg-secondary rounded-xl text-foreground">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm font-bold text-foreground">Desempenho por Disciplina</CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">Sua média em cada matéria</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 grid md:grid-cols-2 gap-4">
+                      {Object.entries(subjectMap).map(([subjectName, stats]) => {
+                        const hasGrades = stats.corrected > 0;
+                        const average = hasGrades ? Number((stats.sum / stats.corrected).toFixed(1)) : 0;
+                        const averageStr = hasGrades ? String(average).replace('.', ',') : '—';
+
+                        return (
+                          <div key={subjectName} className="p-4 bg-muted/20 border border-border/80 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-xl text-primary shrink-0">
+                                  {subjectName === 'Física' ? <BookOpen className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-extrabold text-xs text-foreground">{subjectName}</h4>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {stats.corrected} de {stats.total} atividades avaliadas
+                                  </p>
+                                </div>
+                              </div>
+                              <div>
+                                {stats.corrected === 0 ? (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                                    Pendente
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-500/15 text-blue-500 border border-blue-500/25">
+                                    Bom
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between gap-4">
+                              <div className="h-1.5 flex-1 bg-border/40 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${stats.corrected === 0 ? 'bg-border/60' : subjectName === 'Física' ? 'bg-amber-500' : 'bg-primary'}`}
+                                  style={{ width: `${stats.corrected > 0 ? (average / 10) * 100 : 0}%` }}
+                                />
+                              </div>
+                              {stats.corrected > 0 ? (
+                                <span className="text-xs font-black text-foreground font-mono">{averageStr}</span>
                               ) : (
-                                <span className="text-muted-foreground font-normal">Pendente</span>
+                                <span className="text-xs font-black text-muted-foreground font-mono">—</span>
                               )}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+
+                  {/* Bottom Activities List */}
+                  <Card className="stripe-card">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-secondary rounded-xl text-foreground">
+                          <GraduationCap className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-bold text-foreground">Atividades, Avaliações e Trabalhos</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">{activities.length} atividades</p>
+                        </div>
+                      </div>
+
+                      {/* Filter Pills */}
+                      <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl shrink-0">
+                        {[
+                          { key: 'TODAS', label: 'Todas' },
+                          { key: 'AVALIACOES', label: 'Avaliações' },
+                          { key: 'TRABALHOS', label: 'Trabalhos' },
+                          { key: 'EXERCICIOS', label: 'Exercícios' }
+                        ].map(tab => (
+                          <button
+                            key={tab.key}
+                            onClick={() => setFilterType(tab.key as any)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                              filterType === tab.key
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-3">
+                      {filteredActivities.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-6">
+                          Nenhuma atividade encontrada nesta categoria.
+                        </p>
+                      ) : (
+                        filteredActivities.map((act) => {
+                          const cat = getActivityCategory(act.title);
+                          const catLabel = cat === 'TRABALHOS' ? 'Trabalho' : cat === 'EXERCICIOS' ? 'Exercício' : 'Avaliação';
+                          const subject = act.subject || (act.title.includes('Física') ? 'Física' : 'Matemática');
+
+                          let barColor = 'bg-primary';
+                          if (act.myGrade === null) barColor = 'bg-border/60';
+                          else if (act.myGrade >= 9.0) barColor = 'bg-emerald-500';
+                          else if (act.myGrade >= 7.0) barColor = 'bg-blue-500';
+                          else barColor = 'bg-amber-500';
+
+                          return (
+                            <div key={act.id} className="p-4 rounded-xl border border-border/80 flex items-center justify-between bg-card hover:bg-muted/15 transition-all">
+                              <div className="flex items-center gap-4">
+                                <div className="p-2.5 bg-secondary/30 rounded-xl text-primary shrink-0">
+                                  {cat === 'TRABALHOS' ? <BookOpen className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                </div>
+                                <div className="space-y-1">
+                                  <h4 className="font-extrabold text-xs text-foreground leading-snug">{act.title}</h4>
+                                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground font-semibold">
+                                    <span className="bg-secondary/40 px-1.5 py-0.5 rounded text-foreground/85">{subject}</span>
+                                    <span className="bg-muted px-1.5 py-0.5 rounded">{catLabel}</span>
+                                    <span className="flex items-center gap-1 font-mono">{formatDate(act.date)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-4">
+                                <div className="w-24 h-1.5 bg-border/40 rounded-full overflow-hidden hidden sm:block">
+                                  <div
+                                    className={`h-full rounded-full ${barColor}`}
+                                    style={{ width: `${act.myGrade !== null ? (act.myGrade / act.maxGrade) * 100 : 0}%` }}
+                                  />
+                                </div>
+
+                                <div className="shrink-0 text-right">
+                                  {act.myGrade !== null ? (
+                                    <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                                      {String(act.myGrade).replace('.', ',')} / {act.maxGrade}
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                                      Pendente
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
                       )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
 
             {/* TAB 3: MEU BOLETIM */}
             {activeTab === 'bulletin' && (
