@@ -45,6 +45,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       logoUrl: '',
       primaryColor: '#3b82f6',
       secondaryColor: '#1e293b',
+      bulletinTemplate: '',
     };
 
     const branding = getStore(storeKey, initialBranding);
@@ -69,6 +70,7 @@ export const getMockResponse = (url: string, method: string, params?: any, data?
       if (methodLower === 'put' || methodLower === 'patch') {
         branding.name = reqBody.name || branding.name;
         branding.logoUrl = reqBody.logoUrl !== undefined ? reqBody.logoUrl : branding.logoUrl;
+        branding.bulletinTemplate = reqBody.bulletinTemplate !== undefined ? reqBody.bulletinTemplate : branding.bulletinTemplate;
         setStore(storeKey, branding);
         return { status: 'success', data: branding };
       }

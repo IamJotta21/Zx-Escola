@@ -253,6 +253,7 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
         faviconUrl: body.faviconUrl !== undefined ? body.faviconUrl : existing.faviconUrl,
         primaryColor: body.primaryColor !== undefined ? body.primaryColor : existing.primaryColor,
         secondaryColor: body.secondaryColor !== undefined ? body.secondaryColor : existing.secondaryColor,
+        bulletinTemplate: body.bulletinTemplate !== undefined ? body.bulletinTemplate : existing.bulletinTemplate,
         academicYear: body.academicYear !== undefined ? body.academicYear : existing.academicYear,
         gradingSystem: body.gradingSystem !== undefined ? body.gradingSystem : existing.gradingSystem,
         minPassingGrade: body.minPassingGrade !== undefined ? parseFloat(body.minPassingGrade) : existing.minPassingGrade,

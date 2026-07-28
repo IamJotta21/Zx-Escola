@@ -2692,6 +2692,14 @@ const SettingsPage: React.FC = () => {
   const [schoolLoading, setSchoolLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
+  // Bulletin template states
+  const [bulletinTitle, setBulletinTitle] = useState('Boletim Escolar Oficial');
+  const [showAbsences, setShowAbsences] = useState(true);
+  const [showRemedial, setShowRemedial] = useState(true);
+  const [showSignatures, setShowSignatures] = useState(true);
+  const [bulletinObservations, setBulletinObservations] = useState('');
+  const [bulletinAccentColor, setBulletinAccentColor] = useState('bg-slate-800');
+
   // Sync profile details on start
   useEffect(() => {
     async function fetchProfile() {
@@ -2712,6 +2720,17 @@ const SettingsPage: React.FC = () => {
           if (res.data.status === 'success') {
             setSchoolName(res.data.data.name || '');
             setLogoUrlInput(res.data.data.logoUrl || '');
+            if (res.data.data.bulletinTemplate) {
+              try {
+                const config = JSON.parse(res.data.data.bulletinTemplate);
+                if (config.title) setBulletinTitle(config.title);
+                if (config.showAbsences !== undefined) setShowAbsences(config.showAbsences);
+                if (config.showRemedial !== undefined) setShowRemedial(config.showRemedial);
+                if (config.showSignatures !== undefined) setShowSignatures(config.showSignatures);
+                if (config.observations !== undefined) setBulletinObservations(config.observations);
+                if (config.accentColor) setBulletinAccentColor(config.accentColor);
+              } catch (e) {}
+            }
           }
         } catch {
           // silent
@@ -2729,22 +2748,37 @@ const SettingsPage: React.FC = () => {
       return;
     }
     setSchoolLoading(true);
+
+    const templateJson = JSON.stringify({
+      title: bulletinTitle,
+      showAbsences,
+      showRemedial,
+      showSignatures,
+      observations: bulletinObservations,
+      accentColor: bulletinAccentColor
+    });
+
     try {
       const res = await api.put(`/tenants/${user?.tenantId}`, {
         name: schoolName,
         logoUrl: logoUrlInput || null,
+        bulletinTemplate: templateJson,
       });
       if (res.data.status === 'success') {
         const updatedTenant = res.data.data;
         updateTenantBranding(updatedTenant.name, updatedTenant.logoUrl || '');
+        
+        // Save in localStorage for fast local preview
+        localStorage.setItem('bulletin_config_custom', templateJson);
+
         addToast({
           type: 'success',
           title: 'Configurações Salvas',
-          message: 'Identidade visual da escola atualizada com sucesso!',
+          message: 'Identidade visual e modelo do boletim atualizados com sucesso!',
         });
       }
     } catch (err) {
-      addToast({ type: 'error', message: 'Erro ao atualizar identidade visual.' });
+      addToast({ type: 'error', message: 'Erro ao salvar configurações da escola.' });
     } finally {
       setSchoolLoading(false);
     }
@@ -3127,10 +3161,108 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Custom Bulletin Template Settings */}
+                <div className="border-t border-border/80 pt-6 mt-6 space-y-6">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Modelo de Boletim Escolar (Impressão/PDF)
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Configure as informações, colunas e aparência do boletim gerado pelo sistema.
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <Input
+                        label="Título do Documento"
+                        value={bulletinTitle}
+                        onChange={(e) => setBulletinTitle(e.target.value)}
+                        placeholder="Ex: Boletim Escolar Oficial"
+                      />
+
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-foreground block">Opções de Exibição das Colunas</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex items-center gap-2 border border-border/80 p-3 rounded-xl hover:bg-muted/10 cursor-pointer select-none bg-card">
+                            <input
+                              type="checkbox"
+                              checked={showAbsences}
+                              onChange={(e) => setShowAbsences(e.target.checked)}
+                              className="rounded border-input text-primary focus:ring-primary h-4 w-4"
+                            />
+                            <div className="text-[11px]">
+                              <span className="font-bold block text-foreground">Exibir Faltas</span>
+                              <span className="text-muted-foreground">Coluna de presenças</span>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center gap-2 border border-border/80 p-3 rounded-xl hover:bg-muted/10 cursor-pointer select-none bg-card">
+                            <input
+                              type="checkbox"
+                              checked={showRemedial}
+                              onChange={(e) => setShowRemedial(e.target.checked)}
+                              className="rounded border-input text-primary focus:ring-primary h-4 w-4"
+                            />
+                            <div className="text-[11px]">
+                              <span className="font-bold block text-foreground">Exibir Rec.</span>
+                              <span className="text-muted-foreground">Notas de recuperação</span>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center gap-2 border border-border/80 p-3 rounded-xl hover:bg-muted/10 cursor-pointer select-none bg-card col-span-2">
+                            <input
+                              type="checkbox"
+                              checked={showSignatures}
+                              onChange={(e) => setShowSignatures(e.target.checked)}
+                              className="rounded border-input text-primary focus:ring-primary h-4 w-4"
+                            />
+                            <div className="text-[11px]">
+                              <span className="font-bold block text-foreground">Assinaturas do Diretor e Secretário</span>
+                              <span className="text-muted-foreground">Exibe espaço para as assinaturas oficiais no rodapé</span>
+                            </div>
+                          </label>
+
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[11px] font-bold text-foreground">Cor de Destaque do Cabeçalho</label>
+                            <select
+                              value={bulletinAccentColor}
+                              onChange={(e) => setBulletinAccentColor(e.target.value)}
+                              className="w-full bg-card border border-input rounded-lg p-2 text-xs font-semibold focus:ring-primary"
+                            >
+                              <option value="bg-slate-800">Cinza Escuro (Padrão)</option>
+                              <option value="bg-blue-800">Azul Imperial</option>
+                              <option value="bg-emerald-800">Verde Floresta</option>
+                              <option value="bg-amber-800">Ouro / Âmbar</option>
+                              <option value="bg-indigo-800">Índigo Real</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-foreground block">
+                        Texto de Observações / Notas de Rodapé
+                      </label>
+                      <textarea
+                        value={bulletinObservations}
+                        onChange={(e) => setBulletinObservations(e.target.value)}
+                        placeholder="Ex: O boletim é de caráter informativo. As notas definitivas constam no sistema da secretaria."
+                        className="w-full min-h-[160px] bg-card border border-input rounded-xl p-3 text-xs focus:ring-primary resize-none placeholder:text-muted-foreground/60 text-foreground"
+                      />
+                      <span className="text-[9px] text-muted-foreground block">
+                        Este texto aparecerá centralizado logo abaixo da tabela de notas na versão impressa ou PDF.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
               <CardFooter className="justify-end">
                 <Button type="submit" isLoading={schoolLoading}>
-                  Atualizar Identidade Visual
+                  Salvar Configurações da Escola
                 </Button>
               </CardFooter>
             </form>

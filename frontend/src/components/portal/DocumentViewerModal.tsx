@@ -53,6 +53,28 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
   if (!isOpen || !document) return null;
 
+  // Load custom template config from localStorage
+  const savedConfig = localStorage.getItem(`bulletin_config_${document.type === 'BOLETIM' ? 'custom' : 'none'}`) || localStorage.getItem('bulletin_config_custom');
+  let config = {
+    title: document.title,
+    showAbsences: true,
+    showRemedial: true,
+    showSignatures: true,
+    observations: '',
+    accentColor: 'bg-slate-800',
+  };
+  if (savedConfig && (document.type === 'BOLETIM' || document.type === 'HISTORICO')) {
+    try {
+      const parsed = JSON.parse(savedConfig);
+      if (parsed.title) config.title = parsed.title;
+      if (parsed.showAbsences !== undefined) config.showAbsences = parsed.showAbsences;
+      if (parsed.showRemedial !== undefined) config.showRemedial = parsed.showRemedial;
+      if (parsed.showSignatures !== undefined) config.showSignatures = parsed.showSignatures;
+      if (parsed.observations !== undefined) config.observations = parsed.observations;
+      if (parsed.accentColor) config.accentColor = parsed.accentColor;
+    } catch (e) {}
+  }
+
   const handlePrint = () => {
     window.print();
   };
@@ -67,7 +89,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/40 print:hidden">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-foreground text-sm truncate">{document.title}</h3>
+            <h3 className="font-bold text-foreground text-sm truncate">
+              {document.type === 'BOLETIM' ? config.title : document.title}
+            </h3>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -115,7 +139,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             {/* Title */}
             <div className="text-center py-2 bg-slate-100 rounded-md">
               <h2 className="text-lg font-black text-slate-900 tracking-wider uppercase">
-                {document.title}
+                {document.type === 'BOLETIM' ? config.title : document.title}
               </h2>
             </div>
 
@@ -148,15 +172,15 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               <div className="space-y-4">
                 <table className="w-full text-xs border-collapse border border-slate-300">
                   <thead>
-                    <tr className="bg-slate-800 text-white font-bold">
+                    <tr className={`${config.accentColor} text-white font-bold`}>
                       <th className="border border-slate-300 p-2 text-left">Disciplina</th>
                       <th className="border border-slate-300 p-2 text-center">Bim 1</th>
                       <th className="border border-slate-300 p-2 text-center">Bim 2</th>
                       <th className="border border-slate-300 p-2 text-center">Bim 3</th>
                       <th className="border border-slate-300 p-2 text-center">Bim 4</th>
-                      <th className="border border-slate-300 p-2 text-center">Rec.</th>
+                      {config.showRemedial && <th className="border border-slate-300 p-2 text-center">Rec.</th>}
                       <th className="border border-slate-300 p-2 text-center">Média Final</th>
-                      <th className="border border-slate-300 p-2 text-center">Faltas</th>
+                      {config.showAbsences && <th className="border border-slate-300 p-2 text-center">Faltas</th>}
                       <th className="border border-slate-300 p-2 text-right">Situação</th>
                     </tr>
                   </thead>
@@ -178,15 +202,19 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                         <td className="border border-slate-300 p-2 text-center font-mono">
                           {rc.bimester4 ?? '—'}
                         </td>
-                        <td className="border border-slate-300 p-2 text-center font-mono text-rose-600">
-                          {rc.remedialGrade ?? '—'}
-                        </td>
+                        {config.showRemedial && (
+                          <td className="border border-slate-300 p-2 text-center font-mono text-rose-600">
+                            {rc.remedialGrade ?? '—'}
+                          </td>
+                        )}
                         <td className="border border-slate-300 p-2 text-center font-mono font-black text-slate-900">
                           {rc.finalAverage ?? '—'}
                         </td>
-                        <td className="border border-slate-300 p-2 text-center font-mono">
-                          {rc.absences}
-                        </td>
+                        {config.showAbsences && (
+                          <td className="border border-slate-300 p-2 text-center font-mono">
+                            {rc.absences}
+                          </td>
+                        )}
                         <td className="border border-slate-300 p-2 text-right font-bold text-xs">
                           <span
                             className={
@@ -207,6 +235,13 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 {document.attendancePercentage !== undefined && (
                   <div className="flex justify-end text-xs font-bold text-slate-700">
                     Percentual Global de Frequência: {document.attendancePercentage}%
+                  </div>
+                )}
+                
+                {config.observations && (
+                  <div className="mt-4 p-4 border border-dashed border-slate-300 rounded-lg text-xs text-slate-600 bg-slate-50">
+                    <span className="font-bold text-slate-800 block mb-1">Observações:</span>
+                    <p className="whitespace-pre-wrap leading-relaxed">{config.observations}</p>
                   </div>
                 )}
               </div>
@@ -257,20 +292,22 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             )}
 
             {/* Footer Signatures */}
-            <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs">
-              <div className="space-y-1">
-                <div className="border-t border-slate-400 pt-2 font-bold text-slate-800">
-                  Secretaria Acadêmica
+            {config.showSignatures && (
+              <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs">
+                <div className="space-y-1">
+                  <div className="border-t border-slate-400 pt-2 font-bold text-slate-800">
+                    Secretaria Acadêmica
+                  </div>
+                  <div className="text-[10px] text-slate-500">ZX-Escola Gestão Escolar</div>
                 </div>
-                <div className="text-[10px] text-slate-500">ZX-Escola Gestão Escolar</div>
-              </div>
-              <div className="space-y-1">
-                <div className="border-t border-slate-400 pt-2 font-bold text-slate-800">
-                  Direção Geral / Coordenação
+                <div className="space-y-1">
+                  <div className="border-t border-slate-400 pt-2 font-bold text-slate-800">
+                    Direção Geral / Coordenação
+                  </div>
+                  <div className="text-[10px] text-slate-500">Assinatura Digital Verificada</div>
                 </div>
-                <div className="text-[10px] text-slate-500">Assinatura Digital Verificada</div>
               </div>
-            </div>
+            )}
 
             {/* Security Verification footer */}
             <div className="text-center pt-4 border-t border-slate-200 text-[10px] text-slate-400">

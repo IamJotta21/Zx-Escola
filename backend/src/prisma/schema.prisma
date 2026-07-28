@@ -44,6 +44,7 @@ model Tenant {
   faviconUrl        String?
   primaryColor      String?   @default("#3b82f6")
   secondaryColor    String?   @default("#1e293b")
+  bulletinTemplate  String?
 
   // Configurações Acadêmicas
   academicYear      String?   @default("2026")
